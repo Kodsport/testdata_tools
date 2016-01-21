@@ -30,6 +30,6 @@ for name, groups in case_groups.items():
     for group in groups:
         group_cases[group].append(str(case_mapping[name]))
 
-print('GROUP_CASES = [' + ', '.join(['[' + ', '.join(cases) + ']' for cases in group_cases]) + ']')
+print('GROUP_CASES = [' + ', '.join(['[' + ', '.join(sorted(cases)) + ']' for cases in group_cases]) + ']')
 grader = open("../../testdata_tools/grader.py", "r")
 print(''.join(grader.readlines()))
