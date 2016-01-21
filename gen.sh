@@ -132,7 +132,7 @@ tc () {
   SEED=$(( SEED+1 ))
   echo "Generating case secret/$1..."
   execmd=${programs[$2]}
-  $($execmd ${@}:3} $SEED > secret/$1.in)
+  $($execmd ${@:3} $SEED > secret/$1.in)
 
   echo "Solving case secret/$1..."
   solve secret/$1
