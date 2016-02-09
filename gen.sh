@@ -110,6 +110,7 @@ cleanup_programs () {
     rm $i
   done
   rm -rf __pycache__
+  rm cases groups
 }
 
 # Arguments testgroupname score
@@ -153,5 +154,8 @@ include_group () {
 generate_grader() {
   mkdir -p $PPATH/graders
   python3 ../../testdata_tools/generate_grader.py > $PPATH/graders/grader.py
-  rm cases groups
+}
+
+generate_cms() {
+  python3 ../../testdata_tools/generate_cms.py > $PPATH/data/cms
 }
