@@ -129,8 +129,13 @@ tc () {
   echo $1 $CURGROUP >> cases
   if [[ ${cases[$1]} == "yes" ]]
   then
-    echo "Reusing secret/$1"
-    return 0
+    if [[ $# == 1 ]]; then
+      echo "Reusing secret/$1"
+      return 0
+    else
+      echo "ERROR: duplicate test case name $1"
+      exit 1
+    fi
   fi
   SEED=$(( SEED+1 ))
   echo "Generating case secret/$1..."
