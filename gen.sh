@@ -22,9 +22,13 @@ add_program () {
 }
 
 # Compile a C++ program to run.
-# Arguments: file
+# Arguments: file opts
 compile_cpp () {
-  g++ -O2 -Wall -std=gnu++11 -o $(base $1) $1
+  if [[ $2 == *"opt"* ]]; then
+    g++ -O2 -Wall -std=gnu++11 -o $(base $1) $1
+  else
+    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++11 -o $(base $1) $1
+  fi
   add_program $(base $1) "./$(base $1)"
 }
 
@@ -36,14 +40,18 @@ compile_java () {
 }
 
 # Compile a Python program to run.
-# Arguments: file
+# Arguments: file opts
 compile_py () {
   cp $1 $(base $1)
-  add_program $(base $1) "python3 $(base $1)"
+  if [[ $2 == *"pypy"* ]]; then
+    add_program $(base $1) "pypy $(base $1)"
+  else
+    add_program $(base $1) "python3 $(base $1)"
+  fi
 }
 
 # Compile a program
-# Arguments: file
+# Arguments: file opts
 compile () {
   ext=$(get_ext $1)
   if [ $ext == "java" ]
@@ -51,10 +59,10 @@ compile () {
     compile_java $1
   elif [ $ext == "cpp" -o $ext == "cc" ]
   then
-    compile_cpp $1
+    compile_cpp $1 $2
   elif [ $ext == "py" ]
   then
-    compile_py $1
+    compile_py $1 $2
   else
     echo "Unsupported program: $1"
     exit 1
