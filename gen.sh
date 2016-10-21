@@ -1,5 +1,7 @@
 set -e
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 SOLUTION_BASE=$PPATH/submissions/accepted
 
 declare -A programs
@@ -166,9 +168,9 @@ include_group () {
 
 generate_grader() {
   mkdir -p $PPATH/graders
-  python3 ../../testdata_tools/generate_grader.py > $PPATH/graders/grader.py
+  python3 "$DIR/generate_grader.py" > $PPATH/graders/grader.py
 }
 
 generate_cms() {
-  python3 ../../testdata_tools/generate_cms.py > $PPATH/data/cms
+  python3 "$DIR/generate_cms.py" > $PPATH/data/cms
 }

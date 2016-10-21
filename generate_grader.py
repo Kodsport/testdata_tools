@@ -1,3 +1,7 @@
+import os
+
+testdata_tools_dir = os.path.dirname(os.path.realpath(__file__))
+
 cases = open("cases", "r")
 groups = open("groups", "r")
 
@@ -31,5 +35,5 @@ for name, groups in case_groups.items():
         group_cases[group].append(case_mapping[name])
 
 print('GROUP_CASES = [' + ', '.join(['[' + ', '.join(map(str, sorted(cases))) + ']' for cases in group_cases]) + ']')
-grader = open("../../testdata_tools/grader.py", "r")
+grader = open(testdata_tools_dir + "/grader.py", "r")
 print(''.join(grader.readlines()))
