@@ -38,6 +38,7 @@ compile_cpp () {
 # Arguments: file
 compile_java () {
   javac $1
+  cp $(dirname $1)/*.class .
   add_program $(base $1) "java $(base $1)"
 }
 
@@ -50,6 +51,13 @@ compile_py () {
   else
     add_program $(base $1) "python3 $(base $1)"
   fi
+}
+
+# Compile a bash program to run.
+# Arguments: file
+compile_sh () {
+  cp $1 $(base $1)
+  add_program $(base $1) "bash $(base $1)"
 }
 
 # Compile a program
@@ -65,6 +73,9 @@ compile () {
   elif [ $ext == "py" ]
   then
     compile_py $1 $2
+  elif [ $ext == "sh" ]
+  then
+    compile_sh $1 $2
   else
     echo "Unsupported program: $1"
     exit 1
@@ -120,6 +131,7 @@ cleanup_programs () {
     rm $i
   done
   rm -rf __pycache__
+  rm -rf *.class
   rm cases groups
 }
 
