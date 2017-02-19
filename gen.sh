@@ -147,12 +147,19 @@ group () {
 
 # Arguments: testcasename generator arguments...
 tc () {
-  groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $1"
-  echo $1 $CURGROUP >> cases
-  if [[ ${cases[$1]} == "yes" ]]
+  if [[ ${cases[$1]} != $CURGROUP ]]; then
+    groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $1"
+    echo $1 $CURGROUP >> cases
+  fi
+  if [[ ${cases[$1]} != "" ]]
   then
     if [[ $# == 1 ]]; then
-      echo "Reusing secret/$1"
+      if [[ ${cases[$1]} == $CURGROUP ]]; then
+        echo "Skipping duplicate case secret/$1"
+      else
+        cases[$1]=$CURGROUP
+        echo "Reusing secret/$1"
+      fi
       return 0
     else
       echo "ERROR: duplicate test case name $1"
@@ -166,7 +173,7 @@ tc () {
 
   echo "Solving case secret/$1..."
   solve secret/$1
-  cases[$1]="yes"
+  cases[$1]=$CURGROUP
 }
 
 # Include all testcases in another group
