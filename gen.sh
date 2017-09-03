@@ -109,7 +109,7 @@ SEED=58723
 use_solution () {
   path=$SOLUTION_BASE/$1
   SOLUTION=$(base $path)
-  compile $path
+  compile $path $2
 }
 
 
