@@ -114,7 +114,6 @@ solve () {
 
 CURGROUP_NAME=-1
 CURGROUP_DIR=invalid
-SEED=58723
 
 # Use a certain solution as the reference solution
 # Arguments: solution name
@@ -175,9 +174,11 @@ limits () {
 do_tc () {
   name="$1"
   execmd="$2"
-  seed="$3"
+  # Let the seed be the 6 first hex digits of the hash of the name converted
+  # to decimal (range 0-16777215), to make things more deterministic.
+  seed=$((16#$(echo -n "$name" | md5sum | head -c 6)))
   echo "Generating case $name..."
-  $execmd "${@:4}" $seed > "$name.in"
+  $execmd "${@:3}" $seed > "$name.in"
 
   echo "Solving case $name..."
   solve "$name"
@@ -218,11 +219,10 @@ tc () {
       exit 1
     fi
   fi
-  SEED=$(( SEED+1 ))
   cases[$1]=$CURGROUP_NAME
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    do_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" $SEED "${@:3}"
+    do_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -230,7 +230,7 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    par_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" $SEED "${@:3}" &
+    par_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" "${@:3}" &
   fi
 }
 
