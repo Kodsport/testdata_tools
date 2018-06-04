@@ -92,7 +92,7 @@ compile () {
 }
 
 setup_dirs () {
-  rm -rf groups cases secret
+  rm -rf secret
   mkdir -p sample secret
   echo "on_reject: continue
 range: -1 0
@@ -147,7 +147,6 @@ cleanup_programs () {
   done
   rm -rf __pycache__
   rm -rf *.class
-  rm -f groups
 }
 
 # Arguments: testgroupname score
@@ -157,7 +156,6 @@ group () {
   CURGROUP_DIR=secret/$1
   echo 
   echo "Group $CURGROUP_NAME ($1)"
-  echo $1 $2 >> groups
   groups[$1]=""
 
   echo "on_reject: break
