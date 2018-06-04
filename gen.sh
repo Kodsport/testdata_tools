@@ -4,6 +4,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SOLUTION_BASE=$PPATH/submissions/accepted
 
+# Set USE_PARALLEL=0 before including gen.sh to disable parallelism.
+if [[ $USE_PARALLEL != 0 ]]; then
+  USE_PARALLEL=1
+  PARALLELISM_ACTIVE=1
+fi
+
 declare -A programs
 declare -A cases
 declare -A groups
@@ -20,12 +26,15 @@ base () {
 # Add a program to the list of programs
 # Arguments: name execution_command
 add_program () {
-  programs[$1]=$2
+  programs[$1]="$2"
 }
+
+add_program cat "bash -c cat<\$0"
 
 # Compile a C++ program to run.
 # Arguments: file opts
 compile_cpp () {
+  echo Compiling $1...
   if [[ $2 == *"opt"* ]]; then
     g++ -O2 -Wall -std=gnu++11 -o $(base $1) $1
   else
@@ -84,13 +93,16 @@ compile () {
 
 setup_dirs () {
   rm -rf groups cases secret
-  mkdir -p secret
-  echo "grading: custom
-grader_flags: ignore" > sample/testdata.yaml
-  echo "grading: custom
-grader_flags: groups" > secret/testdata.yaml
-  echo "grading: custom
-grader_flags: sum" > testdata.yaml
+  mkdir -p sample secret
+  echo "on_reject: continue
+range: -1 0
+accept_score: 0
+grader_flags: no_errors" > sample/testdata.yaml
+  echo "on_reject: continue
+range: 0 100" > secret/testdata.yaml
+  echo "range: 0 100
+on_reject: continue
+grader_flags: always_accept" > testdata.yaml
 }
 
 # Solve a test case using the solution
@@ -100,8 +112,8 @@ solve () {
   $($execmd < $1.in > $1.ans)
 }
 
-CURGROUP=-1
 CURGROUP_NAME=-1
+CURGROUP_DIR=invalid
 SEED=58723
 
 # Use a certain solution as the reference solution
@@ -117,6 +129,7 @@ use_solution () {
 # Arguments: none
 samplegroup () {
   echo "Sample group"
+  CURGROUP_DIR=sample
 }
 
 # Arguments: testcasename
@@ -126,38 +139,77 @@ sample () {
 }
 
 cleanup_programs () {
+  wait
   for i in "${!programs[@]}"
   do
-    rm $i
+    if [[ $i != cat ]]; then
+      rm $i
+    fi
   done
   rm -rf __pycache__
   rm -rf *.class
-  rm cases groups
+  rm -f groups
 }
 
-# Arguments testgroupname score
+# Arguments: testgroupname score
 group () {
+  mkdir secret/$1
   CURGROUP_NAME=$1
-  CURGROUP=$(( CURGROUP+1 ))
+  CURGROUP_DIR=secret/$1
   echo 
-  echo "Group $CURGROUP ($1)"
+  echo "Group $CURGROUP_NAME ($1)"
   echo $1 $2 >> groups
   groups[$1]=""
+
+  echo "on_reject: break
+accept_score: $2
+range: 0 $2
+grader_flags: min" > secret/$1/testdata.yaml
+}
+
+# Arguments: parameters sent to input validator
+limits () {
+  echo "input_validator_flags: $@" >> $CURGROUP_DIR/testdata.yaml
+}
+
+do_tc () {
+  name="$1"
+  execmd="$2"
+  seed="$3"
+  echo "Generating case $name..."
+  $execmd "${@:4}" $seed > "$name.in"
+
+  echo "Solving case $name..."
+  solve "$name"
+}
+
+handle_err() {
+  echo ERROR generating case $1
+  kill $$
+  exit 1
+}
+
+par_tc () {
+  set -E
+  trap "handle_err $1" ERR
+  do_tc "$@"
 }
 
 # Arguments: testcasename generator arguments...
 tc () {
-  if [[ ${cases[$1]} != $CURGROUP ]]; then
-    groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $1"
-    echo $1 $CURGROUP >> cases
-  fi
+  groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $1"
+
   if [[ ${cases[$1]} != "" ]]
   then
     if [[ $# == 1 ]]; then
-      if [[ ${cases[$1]} == $CURGROUP ]]; then
+      if [[ ${cases[$1]} == $CURGROUP_NAME ]]; then
         echo "Skipping duplicate case secret/$1"
       else
-        cases[$1]=$CURGROUP
+        wait
+        PARALLELISM_ACTIVE=1
+        cp secret/${cases[$1]}/$1.in secret/${CURGROUP_NAME}/$1.in
+        cp secret/${cases[$1]}/$1.ans secret/${CURGROUP_NAME}/$1.ans
+        cases[$1]=$CURGROUP_NAME
         echo "Reusing secret/$1"
       fi
       return 0
@@ -167,29 +219,37 @@ tc () {
     fi
   fi
   SEED=$(( SEED+1 ))
-  echo "Generating case secret/$1..."
-  execmd=${programs[$2]}
-  $($execmd "${@:3}" $SEED > secret/$1.in)
+  cases[$1]=$CURGROUP_NAME
 
-  echo "Solving case secret/$1..."
-  solve secret/$1
-  cases[$1]=$CURGROUP
+  if [[ $USE_PARALLEL != 1 ]]; then
+    do_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" $SEED "${@:3}"
+  else
+    if [[ $PARALLELISM_ACTIVE = 5 ]]; then
+      # wait after every 4 cases
+      wait
+      let PARALLELISM_ACTIVE=1
+    fi
+    let PARALLELISM_ACTIVE++
+    par_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" $SEED "${@:3}" &
+  fi
+}
+
+# Arguments: ../custom-data/testcasename.in
+custom () {
+  tc $(base $1) cat $1
 }
 
 # Include all testcases in another group
 # Arguments: group name to include
 include_group () {
+  any=0
   for x in ${groups[$1]}
   do
     tc $x
+    any=1
   done
-}
-
-generate_grader() {
-  mkdir -p $PPATH/graders
-  python3 "$DIR/generate_grader.py" > $PPATH/graders/grader.py
-}
-
-generate_cms() {
-  python3 "$DIR/generate_cms.py" > $PPATH/data/cms
+  if [[ $any = 0 ]]; then
+    echo "ERROR: included group $1 does not exist"
+    exit 1
+  fi
 }
