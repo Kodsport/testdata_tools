@@ -184,7 +184,10 @@ do_tc () {
 
 handle_err() {
   echo ERROR generating case $1
-  kill $$
+  # Kill the parent. This might fail if the other subprocesses do so at the
+  # same time, but the PID is unlikely to be reused in this windows, so...
+  # Just silence the error.
+  kill $$ 2>/dev/null
   exit 1
 }
 
