@@ -6,6 +6,21 @@ SOLUTION_BASE=$PPATH/submissions/accepted
 
 TOTAL_SCORE=0
 
+# Feature-detect symlink support if not explicitly set.
+if [[ $USE_SYMLINKS = '' ]]; then
+  set +e
+  rm -f .dummy .dummy2
+  ln -s .dummy .dummy2 2>/dev/null
+  echo -n test >.dummy
+  if [[ $(cat .dummy2 2>/dev/null) = test ]]; then
+    USE_SYMLINKS=1
+  else
+    USE_SYMLINKS=0
+  fi
+  rm -f .dummy .dummy2
+  set -e
+fi
+
 # Set USE_PARALLEL=0 before including gen.sh to disable parallelism.
 if [[ $USE_PARALLEL != 0 ]]; then
   USE_PARALLEL=1
@@ -216,10 +231,15 @@ tc () {
       if [[ ${cases[$name]} == $CURGROUP_NAME ]]; then
         echo "Skipping duplicate case secret/$name"
       else
-        wait
-        PARALLELISM_ACTIVE=1
-        cp secret/${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
-        cp secret/${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
+        if [[ $USE_SYMLINKS = 0 ]]; then
+          wait
+          PARALLELISM_ACTIVE=1
+          cp secret/${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
+          cp secret/${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
+        else
+          ln -s ../${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
+          ln -s ../${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
+        fi
         cases[$name]=$CURGROUP_NAME
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
         echo "Reusing secret/$name"
