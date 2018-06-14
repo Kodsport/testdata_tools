@@ -208,31 +208,36 @@ par_tc () {
 
 # Arguments: testcasename generator arguments...
 tc () {
-  groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $1"
+  name="$1"
 
-  if [[ ${cases[$1]} != "" ]]
+  if [[ ${cases[$name]} != "" ]]
   then
     if [[ $# == 1 ]]; then
-      if [[ ${cases[$1]} == $CURGROUP_NAME ]]; then
-        echo "Skipping duplicate case secret/$1"
+      if [[ ${cases[$name]} == $CURGROUP_NAME ]]; then
+        echo "Skipping duplicate case secret/$name"
       else
         wait
         PARALLELISM_ACTIVE=1
-        cp secret/${cases[$1]}/$1.in secret/${CURGROUP_NAME}/$1.in
-        cp secret/${cases[$1]}/$1.ans secret/${CURGROUP_NAME}/$1.ans
-        cases[$1]=$CURGROUP_NAME
-        echo "Reusing secret/$1"
+        cp secret/${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
+        cp secret/${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
+        cases[$name]=$CURGROUP_NAME
+        groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
+        echo "Reusing secret/$name"
       fi
       return 0
     else
-      echo "ERROR: duplicate test case name $1"
+      echo "ERROR: duplicate test case name $name"
       exit 1
     fi
   fi
-  cases[$1]=$CURGROUP_NAME
+
+  cases[$name]=$CURGROUP_NAME
+  groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
+
+  program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    do_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" "${@:3}"
+    do_tc "secret/$CURGROUP_NAME/$1" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -240,7 +245,7 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    par_tc "secret/$CURGROUP_NAME/$1" "${programs[$2]}" "${@:3}" &
+    par_tc "secret/$CURGROUP_NAME/$1" "$program" "${@:3}" &
   fi
 }
 
