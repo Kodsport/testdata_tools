@@ -4,6 +4,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SOLUTION_BASE=$PPATH/submissions/accepted
 
+TOTAL_SCORE=0
+
 # Set USE_PARALLEL=0 before including gen.sh to disable parallelism.
 if [[ $USE_PARALLEL != 0 ]]; then
   USE_PARALLEL=1
@@ -91,6 +93,14 @@ compile () {
   fi
 }
 
+update_scores() {
+  echo "on_reject: continue
+range: 0 $TOTAL_SCORE" > secret/testdata.yaml
+  echo "range: 0 $TOTAL_SCORE
+on_reject: continue
+grader_flags: always_accept" > testdata.yaml
+}
+
 setup_dirs () {
   rm -rf secret
   mkdir -p sample secret
@@ -98,11 +108,7 @@ setup_dirs () {
 range: -1 0
 accept_score: 0
 grader_flags: no_errors" > sample/testdata.yaml
-  echo "on_reject: continue
-range: 0 100" > secret/testdata.yaml
-  echo "range: 0 100
-on_reject: continue
-grader_flags: always_accept" > testdata.yaml
+  update_scores
 }
 
 # Solve a test case using the solution
@@ -158,10 +164,13 @@ group () {
   echo "Group $CURGROUP_NAME ($1)"
   groups[$1]=""
 
+  score=$2
   echo "on_reject: break
-accept_score: $2
-range: 0 $2
+accept_score: $score
+range: 0 $score
 grader_flags: min" > secret/$1/testdata.yaml
+  TOTAL_SCORE=$((TOTAL_SCORE + score))
+  update_scores
 }
 
 # Arguments: parameters sent to input validator
