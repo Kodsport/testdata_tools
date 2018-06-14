@@ -36,9 +36,9 @@ add_program cat "bash -c cat<\$0"
 compile_cpp () {
   echo Compiling $1...
   if [[ $2 == *"opt"* ]]; then
-    g++ -O2 -Wall -std=gnu++11 -o $(base $1) $1
+    g++ -O2 -Wall -std=gnu++11 -DGENERATING_TEST_DATA -o $(base $1) $1
   else
-    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++11 -o $(base $1) $1
+    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++11 -DGENERATING_TEST_DATA -o $(base $1) $1
   fi
   add_program $(base $1) "./$(base $1)"
 }
