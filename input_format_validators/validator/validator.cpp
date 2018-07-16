@@ -26,8 +26,8 @@ void run() {
 		int b = Int(1, n);
 		Endl();
 		assert(a != b);
-		ed[a].push_back(b);
-		ed[b].push_back(a);
+		ed[a-1].push_back(b-1);
+		ed[b-1].push_back(a-1);
 	}
 
 	for (int i = 0; i < n; i++) {
