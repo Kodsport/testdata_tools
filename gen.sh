@@ -116,16 +116,6 @@ on_reject: continue
 grader_flags: always_accept" > testdata.yaml
 }
 
-setup_dirs () {
-  rm -rf secret
-  mkdir -p sample secret
-  echo "on_reject: continue
-range: -1 0
-accept_score: 0
-grader_flags: no_errors" > sample/testdata.yaml
-  update_scores
-}
-
 # Solve a test case using the solution
 # Arguments: testcase path
 solve () {
@@ -156,18 +146,6 @@ samplegroup () {
 sample () {
   echo "Solving case sample/$1..."
   solve sample/$1
-}
-
-cleanup_programs () {
-  wait
-  for i in "${!programs[@]}"
-  do
-    if [[ $i != cat ]]; then
-      rm $i
-    fi
-  done
-  rm -rf __pycache__
-  rm -rf *.class
 }
 
 # Arguments: testgroupname score
@@ -287,3 +265,28 @@ include_group () {
     exit 1
   fi
 }
+
+# Initialization and cleanup code, automatically included.
+_setup_dirs () {
+  rm -rf secret
+  mkdir -p sample secret
+  echo "on_reject: continue
+range: -1 0
+accept_score: 0
+grader_flags: no_errors" > sample/testdata.yaml
+  _update_scores
+}
+_setup_dirs
+
+_cleanup_programs () {
+  wait
+  for i in "${!programs[@]}"
+  do
+    if [[ $i != cat ]]; then
+      rm -f $i
+    fi
+  done
+  rm -rf __pycache__
+  rm -rf *.class
+}
+trap _cleanup_programs EXIT

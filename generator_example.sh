@@ -2,9 +2,6 @@
 PPATH=$(realpath ..)
 . ../../testdata_tools/gen.sh
 
-# Setup testdata.yaml and do some cleanup
-setup_dirs
-
 # Choose your solution
 use_solution js_100.cpp
 
@@ -33,6 +30,3 @@ include_group group2
 
 group group4 20
 include_group group3
-
-# Cleanup programs
-cleanup_programs
