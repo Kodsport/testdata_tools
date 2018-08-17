@@ -1,6 +1,7 @@
-set -e
+# This file provides support functions for generating testdata for scoring problems with test groups.
+# See generator_example.sh for example usage. For non-scoring problems, include gen-acm.sh instead.
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+set -e
 
 SOLUTION_BASE=$PPATH/submissions/accepted
 
@@ -39,6 +40,13 @@ get_ext () {
 base () {
   ext=$(get_ext $1)
   echo `basename $1 .$ext`
+}
+
+_assert_scoring () {
+  if [[ $USE_ACM != '' ]]; then
+    echo "Do not call $1 for non-scoring generators"
+    exit 1
+  fi
 }
 
 # Add a program to the list of programs
@@ -114,7 +122,8 @@ compile () {
   fi
 }
 
-update_scores() {
+_update_scores() {
+  _assert_scoring "_update_scores"
   echo "on_reject: continue
 range: 0 $TOTAL_SCORE" > secret/testdata.yaml
   echo "range: 0 $TOTAL_SCORE
@@ -129,7 +138,7 @@ solve () {
   $($execmd < $1.in > $1.ans)
 }
 
-CURGROUP_NAME=
+CURGROUP_NAME=.
 CURGROUP_DIR=secret
 
 # Use a certain solution as the reference solution
@@ -144,6 +153,7 @@ use_solution () {
 # Add the sample group:
 # Arguments: none
 samplegroup () {
+  _assert_scoring samplegroup
   echo "Sample group"
   CURGROUP_DIR=sample
 }
@@ -156,6 +166,7 @@ sample () {
 
 # Arguments: testgroupname score
 group () {
+  _assert_scoring group
   mkdir secret/$1
   CURGROUP_NAME=$1
   CURGROUP_DIR=secret/$1
@@ -169,12 +180,16 @@ accept_score: $score
 range: 0 $score
 grader_flags: min" > secret/$1/testdata.yaml
   TOTAL_SCORE=$((TOTAL_SCORE + score))
-  update_scores
+  _update_scores
 }
 
 # Arguments: parameters sent to input validator
 limits () {
-  echo "input_validator_flags: $@" >> $CURGROUP_DIR/testdata.yaml
+  if [[ $USE_ACM == '' ]]; then
+    echo "input_validator_flags: $@" >> $CURGROUP_DIR/testdata.yaml
+  else
+    echo "input_validator_flags: $@" >> testdata.yaml
+  fi
 }
 
 do_tc () {
@@ -208,6 +223,10 @@ par_tc () {
 # Arguments: testcasename generator arguments...
 tc () {
   name="$1"
+  if [[ $USE_ACM == '' && $CURGROUP_NAME == '.' ]]; then
+    echo "ERROR: Test case $name must be within a test group"
+    exit 1
+  fi
 
   if [[ ${cases[$name]} != "" ]]
   then
@@ -260,6 +279,7 @@ tc_manual () {
 # Include all testcases in another group
 # Arguments: group name to include
 include_group () {
+  _assert_scoring include_group
   any=0
   for x in ${groups[$1]}; do
     tc $x
@@ -275,11 +295,13 @@ include_group () {
 _setup_dirs () {
   rm -rf secret
   mkdir -p sample secret
-  echo "on_reject: continue
+  if [[ $USE_ACM == '' ]]; then
+    echo "on_reject: continue
 range: -1 0
 accept_score: 0
 grader_flags: no_errors" > sample/testdata.yaml
-  _update_scores
+    _update_scores
+  fi
 }
 _setup_dirs
 
