@@ -30,6 +30,7 @@ fi
 declare -A programs
 declare -A cases
 declare -A groups
+declare -a cleanup
 
 get_ext () {
   echo $(echo $1 | rev | cut -d. -f1 | rev)
@@ -46,6 +47,11 @@ add_program () {
   programs[$1]="$2"
 }
 
+# Mark a file as needing to be removed when the generator finishes.
+add_cleanup () {
+  cleanup+=("$1")
+}
+
 add_program cat "bash -c cat<\$0"
 
 # Compile a C++ program to run.
@@ -58,6 +64,7 @@ compile_cpp () {
     g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++11 -DGENERATING_TEST_DATA -o $(base $1) $1
   fi
   add_program $(base $1) "./$(base $1)"
+  add_cleanup $(base $1)
 }
 
 # Compile a Java program to run.
@@ -66,24 +73,23 @@ compile_java () {
   javac $1
   cp $(dirname $1)/*.class .
   add_program $(base $1) "java $(base $1)"
+  add_cleanup $(base $1)
 }
 
 # Compile a Python program to run.
 # Arguments: file opts
 compile_py () {
-  cp $1 $(base $1)
   if [[ $2 == *"pypy"* ]]; then
-    add_program $(base $1) "pypy $(base $1)"
+    add_program $(base $1) "pypy $1"
   else
-    add_program $(base $1) "python3 $(base $1)"
+    add_program $(base $1) "python3 $1"
   fi
 }
 
 # Compile a bash program to run.
 # Arguments: file
 compile_sh () {
-  cp $1 $(base $1)
-  add_program $(base $1) "bash $(base $1)"
+  add_program $(base $1) "bash $1"
 }
 
 # Compile a program
@@ -255,8 +261,7 @@ custom () {
 # Arguments: group name to include
 include_group () {
   any=0
-  for x in ${groups[$1]}
-  do
+  for x in ${groups[$1]}; do
     tc $x
     any=1
   done
@@ -280,11 +285,8 @@ _setup_dirs
 
 _cleanup_programs () {
   wait
-  for i in "${!programs[@]}"
-  do
-    if [[ $i != cat ]]; then
-      rm -f $i
-    fi
+  for x in "${cleanup[@]}"; do
+    rm -f $x
   done
   rm -rf __pycache__
   rm -rf *.class
