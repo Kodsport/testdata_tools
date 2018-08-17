@@ -133,8 +133,8 @@ solve () {
   $($execmd < $1.in > $1.ans)
 }
 
-CURGROUP_NAME=-1
-CURGROUP_DIR=invalid
+CURGROUP_NAME=
+CURGROUP_DIR=secret
 
 # Use a certain solution as the reference solution
 # Arguments: solution name
@@ -176,7 +176,7 @@ group () {
   CURGROUP_NAME=$1
   CURGROUP_DIR=secret/$1
   echo 
-  echo "Group $CURGROUP_NAME ($1)"
+  echo "Group $CURGROUP_NAME"
   groups[$1]=""
 
   score=$2
@@ -209,7 +209,7 @@ do_tc () {
 handle_err() {
   echo ERROR generating case $1
   # Kill the parent. This might fail if the other subprocesses do so at the
-  # same time, but the PID is unlikely to be reused in this windows, so...
+  # same time, but the PID is unlikely to be reused in this window, so...
   # Just silence the error.
   kill $$ 2>/dev/null
   exit 1
@@ -228,19 +228,18 @@ tc () {
   if [[ ${cases[$name]} != "" ]]
   then
     if [[ $# == 1 ]]; then
-      if [[ ${cases[$name]} == $CURGROUP_NAME ]]; then
+      if [[ ${cases[$name]} == $CURGROUP_DIR ]]; then
         echo "Skipping duplicate case secret/$name"
       else
+        LN="ln -s ../../" # ln -sr isn't supported on Mac
         if [[ $USE_SYMLINKS = 0 ]]; then
           wait
           PARALLELISM_ACTIVE=1
-          cp secret/${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
-          cp secret/${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
-        else
-          ln -s ../${cases[$name]}/$name.in secret/${CURGROUP_NAME}/$name.in
-          ln -s ../${cases[$name]}/$name.ans secret/${CURGROUP_NAME}/$name.ans
+          LN="cp "
         fi
-        cases[$name]=$CURGROUP_NAME
+        ${LN}${cases[$name]}/$name.in $CURGROUP_DIR/$name.in
+        ${LN}${cases[$name]}/$name.ans $CURGROUP_DIR/$name.ans
+        cases[$name]=$CURGROUP_DIR
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
         echo "Reusing secret/$name"
       fi
@@ -251,13 +250,13 @@ tc () {
     fi
   fi
 
-  cases[$name]=$CURGROUP_NAME
+  cases[$name]=$CURGROUP_DIR
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
 
   program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    do_tc "secret/$CURGROUP_NAME/$1" "$program" "${@:3}"
+    do_tc "$CURGROUP_DIR/$1" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -265,7 +264,7 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    par_tc "secret/$CURGROUP_NAME/$1" "$program" "${@:3}" &
+    par_tc "$CURGROUP_DIR/$1" "$program" "${@:3}" &
   fi
 }
 
