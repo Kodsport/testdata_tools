@@ -252,8 +252,8 @@ tc () {
   fi
 }
 
-# Arguments: ../custom-data/testcasename.in
-custom () {
+# Arguments: ../manual-tests/testcasename.in
+tc_manual () {
   tc $(base $1) cat $1
 }
 
