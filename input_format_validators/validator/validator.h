@@ -112,6 +112,9 @@ struct _validator {
 	}
 } _validator_inst;
 
+[[noreturn]]
+void die_line(const string& msg, const string& trailingMsg);
+
 void die(const string& msg) {
 	cerr << msg << endl;
 	ofstream fout("/tmp/input_validator_msg", ios::app);
@@ -186,10 +189,18 @@ string Arg(const string& name, const string& _default) {
 
 static int _lineno = 1, _consumed_lineno = -1, _hit_char_error = 0;
 char _peek1();
+void die_line(const string& msg, const string& trailingMsg) {
+	string fullMsg = msg;
+	if (!_hit_char_error && _peek1() == -1) fullMsg = msg;
+	else if (_consumed_lineno == -1) fullMsg = msg + " (before reading any input)";
+	else fullMsg = msg + " on line " + to_string(_consumed_lineno);
+	if (!trailingMsg.empty()) {
+		fullMsg += "\n" + trailingMsg;
+	}
+	die(fullMsg);
+}
 void die_line(const string& msg) {
-	if (!_hit_char_error && _peek1() == -1) die(msg);
-	else if (_consumed_lineno == -1) die(msg + " (before reading any input)");
-	else die(msg + " on line " + to_string(_consumed_lineno));
+	die_line(msg, "");
 }
 
 static char _buffer = -2; // -2 = none, -1 = eof, other = that char
@@ -219,7 +230,7 @@ string _token() {
 	string ret;
 	for (;;) {
 		char ch = _peek1();
-		if (ch == ' ' || ch == '\n' || ch == -1) {
+		if (ch == ' ' || ch == '\n' || ch == '\r' || ch == -1) {
 			break;
 		}
 		_use_peek(ch);
@@ -319,7 +330,13 @@ char IO::Char() {
 
 void IO::Char(char expected) {
 	char ret = _peek1();
-	if (ret != expected) die_line("Expected " + _describe(expected) + ", saw " + _describe(ret));
+	if (ret != expected) {
+		string extra;
+		if (expected == '\n' && ret == '\r') {
+			extra = "Is the file using Windows line endings? Convert to Unix ones, e.g. using dos2unix.";
+		}
+		die_line("Expected " + _describe(expected) + ", saw " + _describe(ret), extra);
+	}
 	_use_peek(ret);
 }
 
