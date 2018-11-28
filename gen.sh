@@ -30,6 +30,7 @@ fi
 
 declare -A programs
 declare -A cases
+declare -A basedir
 declare -A groups
 declare -a cleanup
 
@@ -162,6 +163,9 @@ samplegroup () {
 sample () {
   echo "Solving case sample/$1..."
   solve sample/$1
+  cases[$1]=sample
+  basedir[$1]=sample
+  groups[sample]="${groups[sample]} $1"
 }
 
 # Arguments: testgroupname score
@@ -244,13 +248,15 @@ tc () {
         ${LN}${cases[$name]}/$name.ans $CURGROUP_DIR/$name.ans
         cases[$name]=$CURGROUP_DIR
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
-        echo "Reusing secret/$name"
+        echo "Reusing ${basedir[$name]}/$name"
       fi
       return 0
     else
       echo "ERROR: duplicate test case name $name"
       exit 1
     fi
+  else
+    basedir[$name]=secret
   fi
 
   cases[$name]=$CURGROUP_DIR
