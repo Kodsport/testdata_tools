@@ -90,6 +90,8 @@ compile_java () {
 compile_py () {
   if [[ $2 == *"pypy"* ]]; then
     add_program $(base $1) "pypy $1"
+  elif [[ $2 == *"python2"* ]]; then
+    add_program $(base $1) "python2 $1"
   else
     add_program $(base $1) "python3 $1"
   fi
