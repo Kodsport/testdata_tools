@@ -66,9 +66,12 @@ namespace IO {
 };
 using namespace IO;
 
+void SetGeneratorMode();
+
 // INTERNALS
 
 bool _validator_initialized;
+bool _generator_mode;
 struct _validator {
 	map<string, string> params;
 	set<string> used_params;
@@ -84,6 +87,7 @@ struct _validator {
 				die("Duplicate parameter " + before);
 			params[before] = after;
 		}
+		srand((int)Arg("seed", atoi(argv[argc-1])));
 	}
 
 	void destroy() {
@@ -92,6 +96,7 @@ struct _validator {
 			string name = params.begin()->first;
 			die("Unused parameter " + name);
 		}
+		if (_generator_mode) return;
 		IO::Eof();
 		_Exit(42);
 	}
@@ -187,9 +192,14 @@ string Arg(const string& name, const string& _default) {
 	return (string)Arg(name);
 }
 
+void SetGeneratorMode() {
+	_generator_mode = 1;
+}
+
 static int _lineno = 1, _consumed_lineno = -1, _hit_char_error = 0;
 char _peek1();
 void die_line(const string& msg, const string& trailingMsg) {
+	if (_generator_mode) die(msg);
 	string fullMsg = msg;
 	if (!_hit_char_error && _peek1() == -1) fullMsg = msg;
 	else if (_consumed_lineno == -1) fullMsg = msg + " (before reading any input)";
