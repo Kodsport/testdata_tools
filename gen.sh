@@ -37,6 +37,7 @@ PROBLEM_PATH=$(realpath ..)
 SOLUTION_BASE=$PROBLEM_PATH/submissions/accepted
 
 TOTAL_SCORE=0
+HAS_ERROR=0
 
 declare -A programs
 declare -A cases
@@ -213,7 +214,7 @@ limits () {
 }
 
 _do_tc () {
-  name="$1"
+  local name="$1"
   execmd="$2"
   # Let the seed be the 6 first hex digits of the hash of the name converted
   # to decimal (range 0-16777215), to make things more deterministic.
@@ -242,7 +243,7 @@ _par_tc () {
 
 # Arguments: testcasename generator arguments...
 tc () {
-  name="$1"
+  local name="$1"
   if [[ $USE_SCORING == 1 && $CURGROUP_NAME == '.' ]]; then
     echo "ERROR: Test case \"$name\" must be within a test group"
     exit 1
@@ -269,13 +270,15 @@ tc () {
       return 0
     else
       echo "ERROR: tried to reuse test case \"$name\" which doesn't exist"
-      exit 1
+      HAS_ERROR=1
+      return 0
     fi
   else
     # New test case
     if [[ ${cases[$name]} != "" ]]; then
       echo "ERROR: duplicate test case name \"$name\""
-      exit 1
+      HAS_ERROR=1
+      return 0
     else
       basedir[$name]=secret
     fi
@@ -284,7 +287,7 @@ tc () {
   cases[$name]=$CURGROUP_DIR
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
 
-  program="${programs[$2]}"
+  local program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
     _do_tc "$CURGROUP_DIR/$1" "$program" "${@:3}"
@@ -308,14 +311,14 @@ tc_manual () {
 # Arguments: group name to include
 include_group () {
   _assert_scoring include_group
-  any=0
+  local any=0
   for x in ${groups[$1]}; do
     tc $x
     any=1
   done
   if [[ $any = 0 ]]; then
     echo "ERROR: included group $1 does not exist"
-    exit 1
+    HAS_ERROR=1
   fi
 }
 
@@ -340,5 +343,11 @@ _cleanup_programs () {
   done
   rm -rf __pycache__
   rm -rf *.class
+
+  if [[ $HAS_ERROR = 1 ]]; then
+    echo
+    echo "There were errors, see above."
+    exit 1
+  fi
 }
 trap _cleanup_programs EXIT
