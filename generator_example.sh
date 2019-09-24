@@ -31,7 +31,8 @@ tc small-exact gen_random n=10       # Generate a testcase with name "exact" by 
 tc_manual ../manual-tests/hand1.in   # Add a hand-created testcase with name "hand1".
 tc small-eleven1 gen_random n=11
 tc small-eleven2 gen_random n=11
-tc small-eleven3 gen_random n=11     # (etc. About 10-20 test cases per group is typical.)
+tc small-eleven3 gen_random n=11     # (etc. About 10-20 test cases per group is typical. The testcases will be run in order,
+                                     # so it may be reasonable to put the slowest testcase first, and then WA-inducing ones.)
 
 group group2 11
 limits n=100
