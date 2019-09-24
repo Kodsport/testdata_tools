@@ -1,0 +1,9 @@
+author: Simon Lindholm
+source: Baltic Olympiad in Informatics 2018, practice session
+rights_owner: Baltic Olympiad in Informatics 2018
+license: cc by-sa
+type: scoring
+grading:
+    objective: max
+    show_test_data_groups: yes
+validation: custom

@@ -1,0 +1,25 @@
+\problemname{Simple Arithmetic}
+
+You are given three integers $a, b, c$ ($1 \le a, b, c \le 10^9$). Compute $a \cdot b / c$, with an \emph{absolute} precision of $10^{-6}$.
+
+\section*{Input}
+The first and only line of input contains the three integers $a, b, c$ separated by a single space.
+
+\section*{Output}
+Output a single floating point number. It must differ from $a \cdot b / c$ by at most $10^{-6}$ in absolute value, i.e., it should obey $|x - a \cdot b / c| \le 10^{-6}$.
+
+\section*{Constraints}
+Your solution will be tested on a set of test groups, each worth a number of points.
+Each test group contains a set of test cases.
+To get the points for a test group you need to solve all test cases in the test group.
+Your final score will be the maximum score of a single submission.
+
+\noindent
+\begin{tabular}{| l | l | l |}
+\hline
+Group & Points & Limits \\ \hline
+1     & 25     & $1 \le a, b, c \le 10$ \\ \hline
+2     & 25     & $1 \le a, b, c \le 10\,000$ \\ \hline
+3     & 25     & $1 \le a, b \le 10^9, c = 1$ \\ \hline
+4     & 25     & $1 \le a, b, c \le 10^9$ \\ \hline
+\end{tabular}
