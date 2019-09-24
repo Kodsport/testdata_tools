@@ -52,6 +52,7 @@ TC_INDEX=1
 declare -A programs
 declare -A cases
 declare -A latestdir
+declare -A nicenames
 declare -A groups
 declare -a cleanup
 
@@ -203,7 +204,8 @@ sample () {
   echo "Solving case sample/$name..."
   solve "sample/$name"
   cases[$name]="$path"
-  latestdir[$name]="$CURGROUP_DIR"
+  latestdir[$name]=sample
+  nicenames[$name]="sample/$name"
   groups[sample]="${groups[sample]} $name"
 }
 
@@ -224,7 +226,8 @@ sample_manual () {
   done
   echo "Using manual solution for $path"
   cases[$name]="$path"
-  latestdir[$name]="$CURGROUP_DIR"
+  latestdir[$name]=sample
+  nicenames[$name]="sample/$name"
   groups[sample]="${groups[sample]} $name"
 }
 
@@ -278,16 +281,17 @@ _check_missing_samples () {
 }
 
 _do_tc () {
-  local name="$1"
-  local path="$2"
-  local execmd="$3"
+  local nicename="$1"
+  local name="$2"
+  local path="$3"
+  local execmd="$4"
   # Let the seed be the 6 first hex digits of the hash of the name converted
   # to decimal (range 0-16777215), to make things more deterministic.
   seed=$((16#$(echo -n "$name" | md5sum | head -c 6)))
-  echo "Generating case $path..."
-  $execmd "${@:4}" $seed > "$path.in"
+  echo "Generating case $nicename..."
+  $execmd "${@:5}" $seed > "$path.in"
 
-  echo "Solving case $path..."
+  echo "Solving case $nicename..."
   solve "$path"
 }
 
@@ -318,7 +322,7 @@ tc () {
     # Reuse test case
     if [[ ${cases[$name]} != "" ]]; then
       if [[ ${latestdir[$name]} == "$CURGROUP_DIR" ]]; then
-        echo "Skipping duplicate case ${cases[$name]}"
+        echo "Skipping duplicate case ${nicenames[$name]}"
       else
         LN="ln -s ../../" # ln -sr isn't supported on Mac
         if [[ $USE_SYMLINKS = 0 ]]; then
@@ -331,7 +335,7 @@ tc () {
         ${LN}${cases[$name]}.ans "$path.ans"
         latestdir[$name]="$CURGROUP_DIR"
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
-        echo "Reusing ${cases[$name]}"
+        echo "Reusing ${nicenames[$name]}"
       fi
     else
       _error "tried to reuse test case \"$name\" which doesn't exist"
@@ -350,12 +354,14 @@ tc () {
   let TC_INDEX++
   cases[$name]="$path"
   latestdir[$name]="$CURGROUP_DIR"
+  local nicename="$CURGROUP_NAME/$name"
+  nicenames[$name]="$nicename"
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
 
   local program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    _do_tc "$name" "$path" "$program" "${@:3}"
+    _do_tc "$nicename" "$name" "$path" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -363,13 +369,13 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    _par_tc "$name" "$path" "$program" "${@:3}" &
+    _par_tc "$nicename" "$name" "$path" "$program" "${@:3}" &
   fi
 }
 
 # Arguments: ../manual-tests/testcasename.in
 tc_manual () {
-  tc $(_base $1) cat $1
+  tc $(_base "$1") cat "$1"
 }
 
 # Include all testcases in another group
@@ -378,11 +384,11 @@ include_group () {
   _assert_scoring include_group
   local any=0
   for x in ${groups[$1]}; do
-    tc $x
+    tc "$x"
     any=1
   done
   if [[ $any = 0 ]]; then
-    _error "included group $1 does not exist"
+    _error "included group \"$1\" does not exist"
   fi
 }
 
