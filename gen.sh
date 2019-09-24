@@ -242,6 +242,16 @@ limits () {
   fi
 }
 
+_check_missing_samples () {
+  for INF in sample/*.in; do
+    local name=$(basename "$INF" .in)
+    if [[ "$name" != '*' && ${basedir[$name]} != "sample" ]]; then
+      echo "ERROR: missing sample or sample_manual directive for sample/$name.in"
+      HAS_ERROR=1
+    fi
+  done
+}
+
 _do_tc () {
   local name="$1"
   execmd="$2"
@@ -372,6 +382,8 @@ _cleanup_programs () {
   done
   rm -rf __pycache__
   rm -rf *.class
+
+  _check_missing_samples
 
   if [[ $HAS_ERROR = 1 ]]; then
     echo
