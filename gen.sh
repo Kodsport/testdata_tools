@@ -18,6 +18,12 @@ if [[ $USE_SCORING != 0 ]]; then
   USE_SCORING=1
 fi
 
+# Set REQUIRE_SAMPLE_REUSE=0 before including gen.sh to indicate that it's
+# fine for samples not to be included in any test groups.
+if [[ $REQUIRE_SAMPLE_REUSE != 0 ]]; then
+  REQUIRE_SAMPLE_REUSE=1
+fi
+
 # Feature-detect symlink support if not explicitly set.
 if [[ $USE_SYMLINKS = '' ]]; then
   set +e
@@ -254,6 +260,18 @@ _check_missing_samples () {
       _error "missing sample or sample_manual directive for sample/$name.in"
     fi
   done
+
+  local any=0
+  for INF in sample/*.in; do
+    local name=$(basename "$INF" .in)
+    if [[ "$name" != '*' && ${basedir[$name]} = "sample" && ${latestdir[$name]} = "sample" && $REQUIRE_SAMPLE_REUSE = 1 ]]; then
+      _error "sample/$name must be included in some secret test group; add the line \"tc $name\""
+      any=1
+    fi
+  done
+  if [[ $any = 1 ]]; then
+    echo "(Add \"REQUIRE_SAMPLE_REUSE=0\" before including gen.sh to ignore this, if needed.)"
+  fi
 }
 
 _do_tc () {
