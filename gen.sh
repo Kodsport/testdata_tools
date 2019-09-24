@@ -49,7 +49,7 @@ TOTAL_SCORE=0
 HAS_ERROR=0
 
 declare -A programs
-declare -A basedir
+declare -A cases
 declare -A latestdir
 declare -A groups
 declare -a cleanup
@@ -166,7 +166,7 @@ grader_flags: ignore_sample" > testdata.yaml
 # Solve a test case using the solution
 # Arguments: testcase path
 solve () {
-  execmd=${programs[$SOLUTION]}
+  local execmd=${programs[$SOLUTION]}
   $($execmd < $1.in > $1.ans)
 }
 
@@ -194,14 +194,15 @@ samplegroup () {
 # Arguments: testcasename
 sample () {
   local name="$1"
-  if [[ ${basedir[$name]} != "" ]]; then
-    _error "duplicate test case \"sample/$name\""
+  local path="sample/$1"
+  if [[ ${cases[$name]} != "" ]]; then
+    _error "duplicate test case \"$path\""
     return 0
   fi
   echo "Solving case sample/$name..."
-  solve sample/$name
-  basedir[$name]=$CURGROUP_DIR
-  latestdir[$name]=$CURGROUP_DIR
+  solve "sample/$name"
+  cases[$name]="$path"
+  latestdir[$name]="$CURGROUP_DIR"
   groups[sample]="${groups[sample]} $name"
 }
 
@@ -209,37 +210,38 @@ sample () {
 # Arguments: testcasename
 sample_manual () {
   local name="$1"
-  if [[ ${basedir[$name]} != "" ]]; then
-    _error "duplicate test case \"sample/$name\""
+  local path="sample/$1"
+  if [[ ${cases[$name]} != "" ]]; then
+    _error "duplicate test case \"$path\""
     return 0
   fi
   for ext in in ans; do
-    if [[ ! -f sample/$name.$ext ]]; then
-      _error "tried to add manual sample testcase sample/$name, but .$ext file is missing"
+    if [[ ! -f "$path.$ext" ]]; then
+      _error "tried to add manual sample testcase $path, but .$ext file is missing"
       return 0
     fi
   done
-  echo "Using manual solution for sample/$name"
-  basedir[$name]=$CURGROUP_DIR
-  latestdir[$name]=$CURGROUP_DIR
+  echo "Using manual solution for $path"
+  cases[$name]="$path"
+  latestdir[$name]="$CURGROUP_DIR"
   groups[sample]="${groups[sample]} $name"
 }
 
 # Arguments: testgroupname score
 group () {
   _assert_scoring group
-  mkdir secret/$1
-  CURGROUP_NAME=$1
-  CURGROUP_DIR=secret/$1
+  CURGROUP_NAME="$1"
+  CURGROUP_DIR="secret/$1"
   echo 
   echo -e "Group $CURGROUP_NAME"
+  mkdir "$CURGROUP_DIR"
   groups[$1]=""
 
   score=$2
   echo "on_reject: break
 accept_score: $score
 range: 0 $score
-grader_flags: min" > secret/$1/testdata.yaml
+grader_flags: min" > "$CURGROUP_DIR/testdata.yaml"
   TOTAL_SCORE=$((TOTAL_SCORE + score))
   _update_scores
 }
@@ -247,7 +249,7 @@ grader_flags: min" > secret/$1/testdata.yaml
 # Arguments: parameters sent to input validator
 limits () {
   if [[ $USE_SCORING == 1 ]]; then
-    echo "input_validator_flags: $@" >> $CURGROUP_DIR/testdata.yaml
+    echo "input_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
   else
     echo "input_validator_flags: $@" >> testdata.yaml
   fi
@@ -256,7 +258,7 @@ limits () {
 _check_missing_samples () {
   for INF in sample/*.in; do
     local name=$(basename "$INF" .in)
-    if [[ "$name" != '*' && ${basedir[$name]} != "sample" ]]; then
+    if [[ "$name" != '*' && ${cases[$name]} != sample* ]]; then
       _error "missing sample or sample_manual directive for sample/$name.in"
     fi
   done
@@ -264,7 +266,7 @@ _check_missing_samples () {
   local any=0
   for INF in sample/*.in; do
     local name=$(basename "$INF" .in)
-    if [[ "$name" != '*' && ${basedir[$name]} = "sample" && ${latestdir[$name]} = "sample" && $REQUIRE_SAMPLE_REUSE = 1 ]]; then
+    if [[ "$name" != '*' && ${cases[$name]} = sample* && ${latestdir[$name]} = "sample" && $REQUIRE_SAMPLE_REUSE = 1 ]]; then
       _error "sample/$name must be included in some secret test group; add the line \"tc $name\""
       any=1
     fi
@@ -276,7 +278,7 @@ _check_missing_samples () {
 
 _do_tc () {
   local name="$1"
-  execmd="$2"
+  local execmd="$2"
   # Let the seed be the 6 first hex digits of the hash of the name converted
   # to decimal (range 0-16777215), to make things more deterministic.
   seed=$((16#$(echo -n "$name" | md5sum | head -c 6)))
@@ -305,16 +307,17 @@ _par_tc () {
 # Arguments: testcasename generator arguments...
 tc () {
   local name="$1"
-  if [[ $USE_SCORING == 1 && $CURGROUP_NAME == '.' ]]; then
+  local path="$CURGROUP_DIR/$name"
+  if [[ $USE_SCORING == 1 && "$CURGROUP_NAME" == '.' ]]; then
     _error "test case \"$name\" must be within a test group"
     exit 1
   fi
 
   if [[ $# == 1 ]]; then
     # Reuse test case
-    if [[ ${basedir[$name]} != "" ]]; then
-      if [[ ${latestdir[$name]} == $CURGROUP_DIR ]]; then
-        echo "Skipping duplicate case ${basedir[$name]}/$name"
+    if [[ ${cases[$name]} != "" ]]; then
+      if [[ ${latestdir[$name]} == "$CURGROUP_DIR" ]]; then
+        echo "Skipping duplicate case ${cases[$name]}"
       else
         LN="ln -s ../../" # ln -sr isn't supported on Mac
         if [[ $USE_SYMLINKS = 0 ]]; then
@@ -322,11 +325,11 @@ tc () {
           PARALLELISM_ACTIVE=1
           LN="cp "
         fi
-        ${LN}${basedir[$name]}/$name.in $CURGROUP_DIR/$name.in
-        ${LN}${basedir[$name]}/$name.ans $CURGROUP_DIR/$name.ans
-        latestdir[$name]=$CURGROUP_DIR
+        ${LN}${cases[$name]}.in "$path.in"
+        ${LN}${cases[$name]}.ans "$path.ans"
+        latestdir[$name]="$CURGROUP_DIR"
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
-        echo "Reusing ${basedir[$name]}/$name"
+        echo "Reusing ${cases[$name]}"
       fi
       return 0
     else
@@ -335,20 +338,20 @@ tc () {
     fi
   else
     # New test case
-    if [[ ${basedir[$name]} != "" ]]; then
+    if [[ ${cases[$name]} != "" ]]; then
       _error "duplicate test case name \"$name\""
       return 0
     fi
   fi
 
-  basedir[$name]=$CURGROUP_DIR
-  latestdir[$name]=$CURGROUP_DIR
+  cases[$name]="$path"
+  latestdir[$name]="$CURGROUP_DIR"
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
 
   local program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    _do_tc "$CURGROUP_DIR/$1" "$program" "${@:3}"
+    _do_tc "$path" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -356,7 +359,7 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    _par_tc "$CURGROUP_DIR/$1" "$program" "${@:3}" &
+    _par_tc "$path" "$program" "${@:3}" &
   fi
 }
 
@@ -396,7 +399,7 @@ _setup_dirs
 _cleanup_programs () {
   wait
   for x in "${cleanup[@]}"; do
-    rm -f $x
+    rm -f "$x"
   done
   rm -rf __pycache__
   rm -rf *.class
