@@ -16,7 +16,7 @@ group group1 25
 limits ab=10 c=10
 tc 1
 tc tiny-01 gen_random a=1 b=1 c=1
-tc tiny-02 gen_random a=1 b=1 c=10
+tc tiny-02 gen_random a=1 b=1 c=-7
 tc tiny-03 gen_random a=10 b=10 c=10
 tc tiny-04 gen_random a=10 b=10 c=10
 tc tiny-05 gen_random a=10 b=10 c=10
@@ -28,7 +28,7 @@ tc 2
 tc small-01 gen_random a=1 b=1 c=10000
 tc small-02 gen_random a=10000 b=10000 c=1
 tc small-03 gen_random a=10000 b=10000 c=7
-tc small-04 gen_random a=10000 b=10000 c=7
+tc small-04 gen_random a=10000 b=10000 c=-7
 tc small-05 gen_random a=10000 b=10000 c=10000
 tc small-06 gen_random a=10000 b=10000 c=10000
 

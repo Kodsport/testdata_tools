@@ -278,15 +278,16 @@ _check_missing_samples () {
 
 _do_tc () {
   local name="$1"
-  local execmd="$2"
+  local path="$2"
+  local execmd="$3"
   # Let the seed be the 6 first hex digits of the hash of the name converted
   # to decimal (range 0-16777215), to make things more deterministic.
   seed=$((16#$(echo -n "$name" | md5sum | head -c 6)))
-  echo "Generating case $name..."
-  $execmd "${@:3}" $seed > "$name.in"
+  echo "Generating case $path..."
+  $execmd "${@:4}" $seed > "$path.in"
 
-  echo "Solving case $name..."
-  solve "$name"
+  echo "Solving case $path..."
+  solve "$path"
 }
 
 _handle_err() {
@@ -351,7 +352,7 @@ tc () {
   local program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    _do_tc "$path" "$program" "${@:3}"
+    _do_tc "$name" "$path" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -359,7 +360,7 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    _par_tc "$path" "$program" "${@:3}" &
+    _par_tc "$name" "$path" "$program" "${@:3}" &
   fi
 }
 
