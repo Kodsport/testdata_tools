@@ -47,6 +47,7 @@ NOCOL='\033[0m'
 
 TOTAL_SCORE=0
 HAS_ERROR=0
+TC_INDEX=1
 
 declare -A programs
 declare -A cases
@@ -308,7 +309,6 @@ _par_tc () {
 # Arguments: testcasename generator arguments...
 tc () {
   local name="$1"
-  local path="$CURGROUP_DIR/$name"
   if [[ $USE_SCORING == 1 && "$CURGROUP_NAME" == '.' ]]; then
     _error "test case \"$name\" must be within a test group"
     exit 1
@@ -326,17 +326,17 @@ tc () {
           PARALLELISM_ACTIVE=1
           LN="cp "
         fi
+        local path="$CURGROUP_DIR/$(_base ${cases[$name]})"
         ${LN}${cases[$name]}.in "$path.in"
         ${LN}${cases[$name]}.ans "$path.ans"
         latestdir[$name]="$CURGROUP_DIR"
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
         echo "Reusing ${cases[$name]}"
       fi
-      return 0
     else
       _error "tried to reuse test case \"$name\" which doesn't exist"
-      return 0
     fi
+    return 0
   else
     # New test case
     if [[ ${cases[$name]} != "" ]]; then
@@ -345,6 +345,9 @@ tc () {
     fi
   fi
 
+  # Add an index to the test case name, to enforce evaluation order.
+  local path="$CURGROUP_DIR/$(printf '%03d' $TC_INDEX)-$name"
+  let TC_INDEX++
   cases[$name]="$path"
   latestdir[$name]="$CURGROUP_DIR"
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
