@@ -43,8 +43,8 @@ TOTAL_SCORE=0
 HAS_ERROR=0
 
 declare -A programs
-declare -A cases
 declare -A basedir
+declare -A latestdir
 declare -A groups
 declare -a cleanup
 
@@ -188,14 +188,14 @@ samplegroup () {
 # Arguments: testcasename
 sample () {
   local name="$1"
-  if [[ ${cases[$name]} != "" ]]; then
+  if [[ ${basedir[$name]} != "" ]]; then
     _error "duplicate test case \"sample/$name\""
     return 0
   fi
   echo "Solving case sample/$name..."
   solve sample/$name
-  cases[$name]=sample
-  basedir[$name]=sample
+  basedir[$name]=$CURGROUP_DIR
+  latestdir[$name]=$CURGROUP_DIR
   groups[sample]="${groups[sample]} $name"
 }
 
@@ -203,7 +203,7 @@ sample () {
 # Arguments: testcasename
 sample_manual () {
   local name="$1"
-  if [[ ${cases[$name]} != "" ]]; then
+  if [[ ${basedir[$name]} != "" ]]; then
     _error "duplicate test case \"sample/$name\""
     return 0
   fi
@@ -214,8 +214,8 @@ sample_manual () {
     fi
   done
   echo "Using manual solution for sample/$name"
-  cases[$name]=sample
-  basedir[$name]=sample
+  basedir[$name]=$CURGROUP_DIR
+  latestdir[$name]=$CURGROUP_DIR
   groups[sample]="${groups[sample]} $name"
 }
 
@@ -294,8 +294,8 @@ tc () {
 
   if [[ $# == 1 ]]; then
     # Reuse test case
-    if [[ ${cases[$name]} != "" ]]; then
-      if [[ ${cases[$name]} == $CURGROUP_DIR ]]; then
+    if [[ ${basedir[$name]} != "" ]]; then
+      if [[ ${latestdir[$name]} == $CURGROUP_DIR ]]; then
         echo "Skipping duplicate case ${basedir[$name]}/$name"
       else
         LN="ln -s ../../" # ln -sr isn't supported on Mac
@@ -304,9 +304,9 @@ tc () {
           PARALLELISM_ACTIVE=1
           LN="cp "
         fi
-        ${LN}${cases[$name]}/$name.in $CURGROUP_DIR/$name.in
-        ${LN}${cases[$name]}/$name.ans $CURGROUP_DIR/$name.ans
-        cases[$name]=$CURGROUP_DIR
+        ${LN}${basedir[$name]}/$name.in $CURGROUP_DIR/$name.in
+        ${LN}${basedir[$name]}/$name.ans $CURGROUP_DIR/$name.ans
+        latestdir[$name]=$CURGROUP_DIR
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
         echo "Reusing ${basedir[$name]}/$name"
       fi
@@ -317,15 +317,14 @@ tc () {
     fi
   else
     # New test case
-    if [[ ${cases[$name]} != "" ]]; then
+    if [[ ${basedir[$name]} != "" ]]; then
       _error "duplicate test case name \"$name\""
       return 0
-    else
-      basedir[$name]=secret
     fi
   fi
 
-  cases[$name]=$CURGROUP_DIR
+  basedir[$name]=$CURGROUP_DIR
+  latestdir[$name]=$CURGROUP_DIR
   groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
 
   local program="${programs[$2]}"
