@@ -244,13 +244,13 @@ _par_tc () {
 tc () {
   name="$1"
   if [[ $USE_SCORING == 1 && $CURGROUP_NAME == '.' ]]; then
-    echo "ERROR: Test case $name must be within a test group"
+    echo "ERROR: Test case \"$name\" must be within a test group"
     exit 1
   fi
 
-  if [[ ${cases[$name]} != "" ]]
-  then
-    if [[ $# == 1 ]]; then
+  if [[ $# == 1 ]]; then
+    # Reuse test case
+    if [[ ${cases[$name]} != "" ]]; then
       if [[ ${cases[$name]} == $CURGROUP_DIR ]]; then
         echo "Skipping duplicate case secret/$name"
       else
@@ -268,11 +268,17 @@ tc () {
       fi
       return 0
     else
-      echo "ERROR: duplicate test case name $name"
+      echo "ERROR: tried to reuse test case \"$name\" which doesn't exist"
       exit 1
     fi
   else
-    basedir[$name]=secret
+    # New test case
+    if [[ ${cases[$name]} != "" ]]; then
+      echo "ERROR: duplicate test case name \"$name\""
+      exit 1
+    else
+      basedir[$name]=secret
+    fi
   fi
 
   cases[$name]=$CURGROUP_DIR
