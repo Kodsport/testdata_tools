@@ -1,0 +1,42 @@
+\problemname{Ninety-nine}
+
+You and your friend are playing a game which you call \emph{Ninety-nine}.
+You start, by saying either the number $1$ or $2$.
+You then take turns, starting with your friend, increasing this number by either $1$ or $2$ in each step.
+The first player who gets to say the number $99$ wins!
+
+Write a program which plays this game for you and wins.
+
+\section*{Interactivity}
+This problem is interactive.
+
+Your program should start by printing either the number $1$ or $2$ on a single line.
+The grader will then read this number (call it $x$), and in return print a line with either $x+1$ or $x+2$, which can be read by your program.
+Your program should then print a number which is $1$ or $2$ higher, and so on.
+
+If you manage to win the game and print $99$, your program should exit normally (with status code 0), without printing anything further.
+On the other hand, if the grader prints $99$ before you, or if your program prints an invalid value (including numbers larger than $99$), the test group will get judged as Wrong Answer.
+
+You \emph{must} make sure to flush standard output before reading the grader's response, or else your program
+will get judged as Time Limit Exceeded. This works as follows in various languages:
+\begin{itemize}
+  \item Java: \texttt{System.out.println()} flushes automatically.
+  \item Python: \texttt{print()} flushes automatically.
+  \item C++: \texttt{cout << endl;} flushes, in addition to writing a newline. If using printf, \texttt{fflush(stdout)}.
+  \item Pascal: \texttt{Flush(Output)}.
+\end{itemize}
+
+\section*{Constraints}
+Your solution will be tested on a set of test groups, each worth a number of points.
+Each test group contains a set of test cases.
+To get the points for a test group you need to solve all test cases in the test group.
+Your final score will be the maximum score of a single submission.
+
+\noindent
+\begin{tabular}{| l | l | l |}
+\hline
+Group & Points & Constraints \\ \hline
+1     & 30     & Your friend always increases the number by 1. \\ \hline
+2     & 30     & Your friend always increases the number by 2 (unless at 98). \\ \hline
+3     & 40     & Your friend plays randomly, with each option having 50\% probability (unless at 98). \\ \hline
+\end{tabular}
