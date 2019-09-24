@@ -141,10 +141,11 @@ compile () {
 _update_scores() {
   _assert_scoring "_update_scores"
   echo "on_reject: continue
-range: 0 $TOTAL_SCORE" > secret/testdata.yaml
+range: 0 $TOTAL_SCORE
+grader_flags: first_error accept_if_any_accepted" > secret/testdata.yaml
   echo "range: 0 $TOTAL_SCORE
 on_reject: continue
-grader_flags: always_accept" > testdata.yaml
+grader_flags: ignore_sample" > testdata.yaml
 }
 
 # Solve a test case using the solution
@@ -318,9 +319,9 @@ _setup_dirs () {
   mkdir -p sample secret
   if [[ $USE_SCORING == 1 ]]; then
     echo "on_reject: continue
-range: -1 0
+range: 0 0
 accept_score: 0
-grader_flags: no_errors" > sample/testdata.yaml
+grader_flags: first_error" > sample/testdata.yaml
     _update_scores
   fi
 }
