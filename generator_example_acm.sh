@@ -1,6 +1,6 @@
 #!/bin/bash
-PPATH=$(realpath ..)
-. ../../testdata_tools/gen-acm.sh
+USE_SCORING=0
+. ../../testdata_tools/gen.sh
 
 # For unlimited stack:
 # ulimit -s unlimited

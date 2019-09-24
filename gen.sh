@@ -1,11 +1,22 @@
-# This file provides support functions for generating testdata for scoring problems with test groups.
-# See generator_example.sh for example usage. For non-scoring problems, include gen-acm.sh instead.
+# This file provides support functions for generating testdata, primarily for
+# scoring problems with test groups. It has some niceties like automatically
+# passing deterministic random seeds to the generator, and generating test
+# data in parallel.
+#
+# See generator_example.sh for example usage.
 
 set -e
 
-SOLUTION_BASE=$PPATH/submissions/accepted
+# Set USE_PARALLEL=0 before including gen.sh to disable parallelism.
+if [[ $USE_PARALLEL != 0 ]]; then
+  USE_PARALLEL=1
+  PARALLELISM_ACTIVE=1
+fi
 
-TOTAL_SCORE=0
+# Set USE_SCORING=0 before including gen.sh to indicate a non-scoring problem.
+if [[ $USE_SCORING != 0 ]]; then
+  USE_SCORING=1
+fi
 
 # Feature-detect symlink support if not explicitly set.
 if [[ $USE_SYMLINKS = '' ]]; then
@@ -22,11 +33,10 @@ if [[ $USE_SYMLINKS = '' ]]; then
   set -e
 fi
 
-# Set USE_PARALLEL=0 before including gen.sh to disable parallelism.
-if [[ $USE_PARALLEL != 0 ]]; then
-  USE_PARALLEL=1
-  PARALLELISM_ACTIVE=1
-fi
+PROBLEM_PATH=$(realpath ..)
+SOLUTION_BASE=$PROBLEM_PATH/submissions/accepted
+
+TOTAL_SCORE=0
 
 declare -A programs
 declare -A cases
@@ -34,17 +44,17 @@ declare -A basedir
 declare -A groups
 declare -a cleanup
 
-get_ext () {
-  echo $(echo $1 | rev | cut -d. -f1 | rev)
+_get_ext () {
+  echo "$1" | rev | cut -d. -f1 | rev
 }
 
-base () {
-  ext=$(get_ext $1)
-  echo `basename $1 .$ext`
+_base () {
+  ext=$(_get_ext "$1")
+  echo $(basename "$1" .$ext)
 }
 
 _assert_scoring () {
-  if [[ $USE_ACM != '' ]]; then
+  if [[ $USE_SCORING != 1 ]]; then
     echo "Do not call $1 for non-scoring generators"
     exit 1
   fi
@@ -61,6 +71,9 @@ add_cleanup () {
   cleanup+=("$1")
 }
 
+# By default, 'cat' is a supported program. Prefer tc_manual rather than
+# relying on this, though. (The reason for the weird syntax is that we
+# want to ignore the last parameter this holds the seed.)
 add_program cat "bash -c cat<\$0"
 
 # Compile a C++ program to run.
@@ -68,12 +81,12 @@ add_program cat "bash -c cat<\$0"
 compile_cpp () {
   echo Compiling $1...
   if [[ $2 == *"opt"* ]]; then
-    g++ -O2 -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(base $1) $1
+    g++ -O2 -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(_base $1) $1
   else
-    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(base $1) $1
+    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(_base $1) $1
   fi
-  add_program $(base $1) "./$(base $1)"
-  add_cleanup $(base $1)
+  add_program $(_base $1) "./$(_base $1)"
+  add_cleanup $(_base $1)
 }
 
 # Compile a Java program to run.
@@ -81,32 +94,32 @@ compile_cpp () {
 compile_java () {
   javac $1
   cp $(dirname $1)/*.class .
-  add_program $(base $1) "java $(base $1)"
-  add_cleanup $(base $1)
+  add_program $(_base $1) "java $(_base $1)"
+  add_cleanup $(_base $1)
 }
 
 # Compile a Python program to run.
 # Arguments: file opts
 compile_py () {
   if [[ $2 == *"pypy"* ]]; then
-    add_program $(base $1) "pypy $1"
+    add_program $(_base $1) "pypy $1"
   elif [[ $2 == *"python2"* ]]; then
-    add_program $(base $1) "python2 $1"
+    add_program $(_base $1) "python2 $1"
   else
-    add_program $(base $1) "python3 $1"
+    add_program $(_base $1) "python3 $1"
   fi
 }
 
 # Compile a bash program to run.
 # Arguments: file
 compile_sh () {
-  add_program $(base $1) "bash $1"
+  add_program $(_base $1) "bash $1"
 }
 
 # Compile a program
 # Arguments: file opts
 compile () {
-  ext=$(get_ext $1)
+  ext=$(_get_ext $1)
   if [ $ext == "java" ]
   then 
     compile_java $1
@@ -148,7 +161,7 @@ CURGROUP_DIR=secret
 # Arguments: solution name
 use_solution () {
   path=$SOLUTION_BASE/$1
-  SOLUTION=$(base $path)
+  SOLUTION=$(_base $path)
   compile $path $2
 }
 
@@ -191,14 +204,14 @@ grader_flags: min" > secret/$1/testdata.yaml
 
 # Arguments: parameters sent to input validator
 limits () {
-  if [[ $USE_ACM == '' ]]; then
+  if [[ $USE_SCORING == 1 ]]; then
     echo "input_validator_flags: $@" >> $CURGROUP_DIR/testdata.yaml
   else
     echo "input_validator_flags: $@" >> testdata.yaml
   fi
 }
 
-do_tc () {
+_do_tc () {
   name="$1"
   execmd="$2"
   # Let the seed be the 6 first hex digits of the hash of the name converted
@@ -211,7 +224,7 @@ do_tc () {
   solve "$name"
 }
 
-handle_err() {
+_handle_err() {
   echo ERROR generating case $1
   # Kill the parent. This might fail if the other subprocesses do so at the
   # same time, but the PID is unlikely to be reused in this window, so...
@@ -220,16 +233,16 @@ handle_err() {
   exit 1
 }
 
-par_tc () {
+_par_tc () {
   set -E
-  trap "handle_err $1" ERR
-  do_tc "$@"
+  trap "_handle_err $1" ERR
+  _do_tc "$@"
 }
 
 # Arguments: testcasename generator arguments...
 tc () {
   name="$1"
-  if [[ $USE_ACM == '' && $CURGROUP_NAME == '.' ]]; then
+  if [[ $USE_SCORING == 1 && $CURGROUP_NAME == '.' ]]; then
     echo "ERROR: Test case $name must be within a test group"
     exit 1
   fi
@@ -267,7 +280,7 @@ tc () {
   program="${programs[$2]}"
 
   if [[ $USE_PARALLEL != 1 ]]; then
-    do_tc "$CURGROUP_DIR/$1" "$program" "${@:3}"
+    _do_tc "$CURGROUP_DIR/$1" "$program" "${@:3}"
   else
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
@@ -275,13 +288,13 @@ tc () {
       let PARALLELISM_ACTIVE=1
     fi
     let PARALLELISM_ACTIVE++
-    par_tc "$CURGROUP_DIR/$1" "$program" "${@:3}" &
+    _par_tc "$CURGROUP_DIR/$1" "$program" "${@:3}" &
   fi
 }
 
 # Arguments: ../manual-tests/testcasename.in
 tc_manual () {
-  tc $(base $1) cat $1
+  tc $(_base $1) cat $1
 }
 
 # Include all testcases in another group
@@ -303,7 +316,7 @@ include_group () {
 _setup_dirs () {
   rm -rf secret
   mkdir -p sample secret
-  if [[ $USE_ACM == '' ]]; then
+  if [[ $USE_SCORING == 1 ]]; then
     echo "on_reject: continue
 range: -1 0
 accept_score: 0
