@@ -176,13 +176,42 @@ samplegroup () {
   CURGROUP_DIR=sample
 }
 
+# Add a sample testcase
 # Arguments: testcasename
 sample () {
-  echo "Solving case sample/$1..."
-  solve sample/$1
-  cases[$1]=sample
-  basedir[$1]=sample
-  groups[sample]="${groups[sample]} $1"
+  local name="$1"
+  if [[ ${cases[$name]} != "" ]]; then
+    echo "ERROR: duplicate test case \"sample/$name\""
+    HAS_ERROR=1
+    return 0
+  fi
+  echo "Solving case sample/$name..."
+  solve sample/$name
+  cases[$name]=sample
+  basedir[$name]=sample
+  groups[sample]="${groups[sample]} $name"
+}
+
+# Add a sample testcase, with manual .ans file
+# Arguments: testcasename
+sample_manual () {
+  local name="$1"
+  if [[ ${cases[$name]} != "" ]]; then
+    echo "ERROR: duplicate test case \"sample/$name\""
+    HAS_ERROR=1
+    return 0
+  fi
+  for ext in in ans; do
+    if [[ ! -f sample/$name.$ext ]]; then
+      echo "Tried to add manual sample testcase sample/$name, but .$ext file is missing"
+      HAS_ERROR=1
+      return 0
+    fi
+  done
+  echo "Using manual solution for sample/$name"
+  cases[$name]=sample
+  basedir[$name]=sample
+  groups[sample]="${groups[sample]} $name"
 }
 
 # Arguments: testgroupname score
@@ -253,7 +282,7 @@ tc () {
     # Reuse test case
     if [[ ${cases[$name]} != "" ]]; then
       if [[ ${cases[$name]} == $CURGROUP_DIR ]]; then
-        echo "Skipping duplicate case secret/$name"
+        echo "Skipping duplicate case ${basedir[$name]}/$name"
       else
         LN="ln -s ../../" # ln -sr isn't supported on Mac
         if [[ $USE_SYMLINKS = 0 ]]; then

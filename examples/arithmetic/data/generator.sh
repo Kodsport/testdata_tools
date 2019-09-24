@@ -7,10 +7,10 @@ compile gen_random.py
 
 samplegroup
 limits ab=1e9 c=1e9
-# sample 1
-# sample 2
-# sample 3
-# sample 4
+sample_manual 1
+sample_manual 2
+sample_manual 3
+sample_manual 4
 
 group group1 25
 limits ab=10 c=10

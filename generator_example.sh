@@ -16,9 +16,12 @@ compile gen_other.cpp opt            # C++ generator; opt means to compile with 
 
 # Generate answers to sample cases
 samplegroup
+limits n=10
 sample 1
 sample 2
 sample 3
+sample_manual 4                      # Don't generate an .ans file for this sample (e.g. because there are multiple
+                                     # solutions, and we want a specific one)
 
 group group1 7                       # Add a new testdata group worth 7 points
 limits n=15                          # Pass "n=15" to the input validator.
