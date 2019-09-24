@@ -1,0 +1,9 @@
+*.aux
+*.out
+*.log
+*.gch
+**/data/secret/
+*.DS_Store
+*.bcf
+*.xml
+*.pdf
