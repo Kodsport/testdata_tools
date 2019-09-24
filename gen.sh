@@ -36,6 +36,9 @@ fi
 PROBLEM_PATH=$(realpath ..)
 SOLUTION_BASE=$PROBLEM_PATH/submissions/accepted
 
+RED='\033[0;31m'
+NOCOL='\033[0m'
+
 TOTAL_SCORE=0
 HAS_ERROR=0
 
@@ -54,9 +57,14 @@ _base () {
   echo $(basename "$1" .$ext)
 }
 
+_error () {
+  echo -e "${RED}ERROR: $1${NOCOL}"
+  HAS_ERROR=1
+}
+
 _assert_scoring () {
   if [[ $USE_SCORING != 1 ]]; then
-    echo "Do not call $1 for non-scoring generators"
+    _error "Do not call $1 for non-scoring generators"
     exit 1
   fi
 }
@@ -181,8 +189,7 @@ samplegroup () {
 sample () {
   local name="$1"
   if [[ ${cases[$name]} != "" ]]; then
-    echo "ERROR: duplicate test case \"sample/$name\""
-    HAS_ERROR=1
+    _error "duplicate test case \"sample/$name\""
     return 0
   fi
   echo "Solving case sample/$name..."
@@ -197,14 +204,12 @@ sample () {
 sample_manual () {
   local name="$1"
   if [[ ${cases[$name]} != "" ]]; then
-    echo "ERROR: duplicate test case \"sample/$name\""
-    HAS_ERROR=1
+    _error "duplicate test case \"sample/$name\""
     return 0
   fi
   for ext in in ans; do
     if [[ ! -f sample/$name.$ext ]]; then
-      echo "Tried to add manual sample testcase sample/$name, but .$ext file is missing"
-      HAS_ERROR=1
+      _error "tried to add manual sample testcase sample/$name, but .$ext file is missing"
       return 0
     fi
   done
@@ -221,7 +226,7 @@ group () {
   CURGROUP_NAME=$1
   CURGROUP_DIR=secret/$1
   echo 
-  echo "Group $CURGROUP_NAME"
+  echo -e "Group $CURGROUP_NAME"
   groups[$1]=""
 
   score=$2
@@ -246,8 +251,7 @@ _check_missing_samples () {
   for INF in sample/*.in; do
     local name=$(basename "$INF" .in)
     if [[ "$name" != '*' && ${basedir[$name]} != "sample" ]]; then
-      echo "ERROR: missing sample or sample_manual directive for sample/$name.in"
-      HAS_ERROR=1
+      _error "missing sample or sample_manual directive for sample/$name.in"
     fi
   done
 }
@@ -266,7 +270,7 @@ _do_tc () {
 }
 
 _handle_err() {
-  echo ERROR generating case $1
+  _error "crashed while generating case $1"
   # Kill the parent. This might fail if the other subprocesses do so at the
   # same time, but the PID is unlikely to be reused in this window, so...
   # Just silence the error.
@@ -284,7 +288,7 @@ _par_tc () {
 tc () {
   local name="$1"
   if [[ $USE_SCORING == 1 && $CURGROUP_NAME == '.' ]]; then
-    echo "ERROR: Test case \"$name\" must be within a test group"
+    _error "test case \"$name\" must be within a test group"
     exit 1
   fi
 
@@ -308,15 +312,13 @@ tc () {
       fi
       return 0
     else
-      echo "ERROR: tried to reuse test case \"$name\" which doesn't exist"
-      HAS_ERROR=1
+      _error "tried to reuse test case \"$name\" which doesn't exist"
       return 0
     fi
   else
     # New test case
     if [[ ${cases[$name]} != "" ]]; then
-      echo "ERROR: duplicate test case name \"$name\""
-      HAS_ERROR=1
+      _error "duplicate test case name \"$name\""
       return 0
     else
       basedir[$name]=secret
@@ -356,8 +358,7 @@ include_group () {
     any=1
   done
   if [[ $any = 0 ]]; then
-    echo "ERROR: included group $1 does not exist"
-    HAS_ERROR=1
+    _error "included group $1 does not exist"
   fi
 }
 
