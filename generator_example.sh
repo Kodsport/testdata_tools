@@ -51,5 +51,6 @@ tc large-exact1 gen_random n=100000 mode=special
 
 group group4 70
 limits n=100000
+include_group group2                 # Including either group2 or group3 will transitively include group1; no need to specify it manually.
 include_group group3
 # etc.
