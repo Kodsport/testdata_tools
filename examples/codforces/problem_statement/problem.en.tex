@@ -1,0 +1,47 @@
+\def\version{jury-2}
+\problemname{Codforces}
+\newcommand{\cf}{codforces\texttrademark{}}
+Nicolas wants to start a competitive fishing career in the \cf championships.
+There are a lot of different divisions to compete in, but since Nicolas is a new participant in \cf he must start in the lowest division (division 1).
+Nicolas goal is to as quickly as possible get to the highest division (division $K$) and win a fishing contest in it.
+
+The \cf rules state that you may only gain a single division per contest, so he needs to perform at least one contest in each division.
+Nicolas is very confident, and thinks he will only need exactly one contest per division to get to the next division.
+When \cf has a contest, there's only a single division competing at a time, and two competitions never overlap in time.
+The contests also follow the same schedule each year.
+
+Nicolas may start competing at \cf any day of the year.
+What he means by as fast as possible is that as few contests as possible should occur at \cf (independent of whether he competes in them or not) between the first contest he participates in and the first win Nicolas gets in the highest division.
+Help Nicolas to compute the number of competitions he needs.
+
+\section*{Input}
+The first line of input contains two integers $N$ and $K$ ($1 \leq K \leq N \leq 10^6$), the number of contests per year, and the number of divisions.
+
+The next line contains the $N$ integers $x_1, \dots, x_N$, ($1 \leq x_i \leq K$), the schedule of contests for a year.
+$x_i$ is the division competing during the $i$'th contest counted from the start of a new year.
+Each division between $1$ and $K$ has at least one contest during the year.
+
+\section*{Output}
+Output a single integer, the smallest number of contests that \cf needs to host between Nicolas's first contest and his first win in division $K$.
+
+\section*{Scoring}
+Your solution will be tested on a set of test case groups.
+To get the points for a group, you need to pass all the test cases in the group.
+
+\noindent
+\begin{tabular}{| l | l | l |}
+\hline
+Group & Points & Constraints \\ \hline
+$1$    & $15$         & $N \leq 10^2$ \\ \hline
+$2$    & $20$         & $N \leq 10^3$ \\ \hline
+$3$    & $25$         & $N = K$ \\ \hline
+$4$    & $40$         & No further constraints\\ \hline
+\end{tabular}
+
+\section*{Explanation of sample 3}
+The fastest way for Nicolas to reach his target is to let his first contest be the second one for division 1 during the year.
+Then he waits for four contests to participate in the first division 2 contest in the year after.
+Then he waits for three contests to compete in division 3.
+Then he waits for five contests to compete in division 4.
+Finally he waits for two contests to compete in division 5.
+In total, it takes $1+(4+1)+(3+1)+(5+1)+(2+1) = 19$ contests.

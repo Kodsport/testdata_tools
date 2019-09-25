@@ -1,0 +1,47 @@
+\def\version{jury-2}
+\problemname{Kodkraft}
+\newcommand{\cf}{kodkraft\texttrademark{}}
+Nicolas vill börja tävla i programmering på hemsidan \cf.
+Det finns jättemånga olika divisioner man kan tävla i, men eftersom Nicolas är en ny deltagare på \cf så måste han börja i den lägsta divisionen (division 1).
+Nicolas mål är att så snabbt som möjligt komma upp till högsta divisionen (division $K$) och vinna en tävling i den.
+
+Enligt kodkrafts\texttrademark{} regler får man bara gå upp en division per tävling, så han kommer behöva göra minst en tävling i varje division.
+Nicolas är dock väldigt självsäker och tror därför att han kommer behöva göra exakt en tävling i varje division för att gå upp till nästa division.
+När det är tävling på \cf så är det bara en division i taget som tävlar, och två tävlingar överlappar aldrig i tiden.
+Tävlingarna följer dessutom samma schema varje år.
+
+Nicolas får påbörja sitt tävlande på \cf vilket datum på året han vill.
+Det Nicolas menar med så snabbt som möjligt är att så få tävlingar som möjligt ska gå på \cf (oavsett om han deltar i dessa eller inte) mellan den första tävling han deltar i, och den första vinsten Nicolas har i den högsta divisionen.
+Hjälp Nicolas att beräkna hur många tävlingar som krävs!
+
+\section*{Indata}
+Den första raden innehåller två heltal $N$ och $K$ ($1 \leq K \leq N \leq 10^6$), antalet tävlingar per år, samt antalet divisioner.
+
+Därefter kommer en rad med $N$ heltal $x_1, \dots, x_N$, ($1 \leq x_i \leq K$), schemat för tävlingarna under ett år.
+$x_i$ är divisionen som tävlar under den $i$:te tävlingen efter nyår.
+Varje division mellan $1$ och $K$ har minst en tävling under året.
+
+\section*{Utdata}
+Ett heltal, det minsta antalet tävlingar som behöver gå på \cf från det att han börjar tävla där tills han har vunnit division $K$.
+
+\section*{Poängsättning}
+Din lösning kommer att testas på en mängd testfallsgrupper.
+För att få poäng för en grupp så måste du klara alla testfall i gruppen.
+
+\noindent
+\begin{tabular}{| l | l | l |}
+\hline
+Grupp & Poängvärde & Gränser \\ \hline
+$1$    & $15$         & $N \leq 10^2$ \\ \hline
+$2$    & $20$         & $N \leq 10^3$ \\ \hline
+$3$    & $25$         & $N = K$ \\ \hline
+$4$    & $40$         & Inga ytterligare begränsningar\\ \hline
+\end{tabular}
+
+\section*{Förklaring av exempelfall 3}
+Det snabbaste sättet för Nicolas att nå sitt mål är genom att låta sin första tävling vara den andra för division 1 under året.
+Sen väntar han i fyra tävlingar för att sedan delta i den första tävlingen för division 2 året efter.
+Sen väntar han tre tävlingar och tävlar i division 3.
+Sen väntar han i fem tävlingar och tävlar i division 4.
+Sen väntar han i 2 tävlingar för att vinna division 5.
+Totalt krävs det $1+(4+1)+(3+1)+(5+1)+(2+1) = 19$ tävlingar.
