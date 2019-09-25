@@ -1,0 +1,53 @@
+\def\version{jury-3}
+\problemname{Light Switches}
+\noindent
+Ann Britt-Caroline has won the lottery.
+With her new fortune, she has bought a private jet, some private jet\footnote{jet: a compact velvet-black coal} and a huge house that consists of $N$ rooms with long corridors to connect them.
+Each corridor connects two rooms, but does not necessarily follow any specific geometric pattern -- it can connect any two rooms.
+Since Ann is a staunch environmentalist she tries to never have the lights on unnecessarily.
+She is currently standing in room $1$ (the only room with the lights on), but thinks that room $N$ might be a more exciting place to be.
+
+Unfortunately Ann Britt-Caroline is afraid of the dark.
+She never wants to walk through a corridor that is not lit up by a lamp.
+Fortunately some light may leak through from a room to its adjacent corridors.
+For each room Ann knows which of the adjacent corridors will be lit up when the lamp in that room is on.
+It is possible that the lamp in a room is not strong enough to light up some of its adjacent corridors (or the corridor may have the wrong angle from the light), but that the lamp in the room on the other side of the corridor is.
+In that case, the corridor can be passed only if the other light is on.
+
+Ann Britt-Caroline is now wondering if it's possible for her to go around in her house, turning on and off lamps and end up in room $N$ without lamps in any other room being turned on.
+In that case, she also wonders what the least number of lamps she needs to turn on in the process is.
+
+\section*{Input}
+The first line of the input contains an integer $N$ ($1 \le N \le 500$), the number of rooms.
+
+The next $N$ lines describe the rooms.
+Line $i$ first contains a number $s_i$ ($0 \le s_i < N$), followed by $s_i$ integers $a_1, \dots, a_s$ ($1 \le a_j \le N, a_j \neq i$), the rooms Ann can go to through corridors lit up by the lamp in room $i$.
+
+Let $M$ denote the sum of all $s_i$. Then $0 \le M \le 2000$.
+
+\section*{Output}
+If it is not possible to get to room $N$ with the lamps in all other rooms being turned off, print ``\texttt{nej}''.
+Otherwise, print a single integer -- the smallest number of different lamps Ann Britt-Caroline needs to turn to get there.
+
+\section*{Scoring}
+Your solution will be tested on a set of test case groups.
+To get the points for a group, you need to pass all the test cases in the group.
+
+\noindent
+\begin{tabular}{| l | l | p{10cm} |}
+\hline
+Group & Points & Constraints \\ \hline
+$1$   & $13$       & $N \le 15, M \le 60$ \\ \hline
+$2$   & $33$       & $N \le 50, M \le 200$ \\ \hline
+$3$   & $34$       & The rooms are on a line. For each $i$ the lamp in room $i$ lights up the corridors in the rooms $L, \dots, R$, for some $L \le i \le R$ \\ \hline
+$4$   & $20$       & No further constraints \\ \hline
+\end{tabular}
+
+\section*{Explanation of samples}
+In the first example, a possible strategy for Ann is to first go to room 3 and turn that light on.
+Afterwards, she can go to room 1 to turn the lights off on that room, and then go back to room 3 (through the corridor that the lamp in room 3 is lighting up).
+Afterwards, she can go to room 4, turn that light on, go to room 5 (her destination), and turn that lamp on as well.
+She can then return to room 4 to turn that light off, then go to room 3 to turn that light off, and finally go from room 3 to room 5.
+In total, she turned on three lamps (in rooms 3, 4 and 5).
+
+In the second example, she can never reach the desired state: she can never turn the light off in room 1 and then leave it.
