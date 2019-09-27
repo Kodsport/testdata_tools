@@ -160,8 +160,8 @@ _update_scores() {
   echo "on_reject: continue
 range: 0 $TOTAL_SCORE
 grader_flags: first_error accept_if_any_accepted" > secret/testdata.yaml
-  echo "range: 0 $TOTAL_SCORE
-on_reject: continue
+  echo "on_reject: continue
+range: 0 $TOTAL_SCORE
 grader_flags: ignore_sample" > testdata.yaml
 }
 
