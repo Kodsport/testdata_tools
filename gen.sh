@@ -21,7 +21,7 @@ fi
 # Set REQUIRE_SAMPLE_REUSE=0 before including gen.sh to indicate that it's
 # fine for samples not to be included in any test groups.
 if [[ $REQUIRE_SAMPLE_REUSE != 0 ]]; then
-  REQUIRE_SAMPLE_REUSE=1
+  REQUIRE_SAMPLE_REUSE=$USE_SCORING
 fi
 
 # Feature-detect symlink support if not explicitly set.
