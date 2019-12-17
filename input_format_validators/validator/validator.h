@@ -236,7 +236,7 @@ char _read1() {
 	_use_peek(ret);
 	return ret;
 }
-string _token() {
+string Token() {
 	string ret;
 	for (;;) {
 		char ch = _peek1();
@@ -260,7 +260,7 @@ string _describe(char ch) {
 }
 
 IntType IO::Int(long long lo, long long hi) {
-	string s = _token();
+	string s = Token();
 	if (s.empty()) die_line("Expected number, saw " + _describe(_peek1()));
 	try {
 		long long mul = 1;
@@ -314,7 +314,7 @@ vector<double> IO::SpacedFloats(long long count, double lo, double hi) {
 }
 
 double IO::Float(double lo, double hi, bool strict) {
-	string s = _token();
+	string s = Token();
 	if (s.empty()) die_line("Expected floating point number, saw " + _describe(_peek1()));
 	istringstream iss(s);
 	double res;
