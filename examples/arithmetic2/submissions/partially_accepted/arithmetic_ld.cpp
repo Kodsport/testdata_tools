@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+// @EXPECTED_GRADES@ AC AC WA WA
 using namespace std;
 
 int main() {

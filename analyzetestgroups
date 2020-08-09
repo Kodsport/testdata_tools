@@ -53,7 +53,7 @@ patterns = {
         \s+
         submission
         \s+
-        (?P<filename>\S+)
+        (?P<name>\S+)
         \s+
         \((?P<language>[^)]+)\)
         \s+
@@ -78,7 +78,7 @@ patterns = {
         re.VERBOSE,
     ),
     "START_SUBMISSION": re.compile(
-        r"INFO : Check (?P<type>\S+) submission (?P<filename>\S+)"
+        r"INFO : Check (?P<type>\S+) submission (?P<name>\S+)"
     ),
     "START_TESTGROUP": re.compile(
         r"INFO : Running on test case group data/(sample|secret/group(?P<number>\d+))"
@@ -129,34 +129,44 @@ class Submission:
         r"@EXPECTED_GRADES@ (?P<grades>((WA|AC|TLE|RTE|MLE)\s*)+)"
     )
 
-    def __init__(self, problempath, expected_total_grade, filename):
-        self.filename = filename
+    @staticmethod
+    def _get_expected_grades(path: Path) -> Optional[List[str]]:
+        if path.is_file():
+            with open(path, encoding="utf-8") as sourcefile:
+                for l, line in enumerate(sourcefile):
+                    m = Submission.expected_score_pattern.search(line)
+                    if m:
+                        return m.group("grades").split()
+        else:
+            for child in path.iterdir():
+                grades = Submission._get_expected_grades(child)
+                if grades is not None:
+                    return grades
+                # TODO (low prio): Check for presence of multiple files containg grade hints
+        return None
+
+    def __init__(self, problempath, expected_total_grade, name):
+        self.problempath = problempath
+        self.name = name
         self.expected_total_grade = expected_total_grade
         self.verdicts: List[Verdict] = []
         self.maxtime: Optional[float] = None
         self.points: Optional[int] = None
-
-        self.expected_grades: List[str] = None
         path = (
             problempath
             / "submissions"
-            / Path(Submission.subdir[expected_total_grade])
-            / filename
+            / Path(Submission.subdir[self.expected_total_grade])
+            / self.name
         )
-        with open(path, encoding="utf-8") as sourcefile:
-            for l, line in enumerate(sourcefile):
-                m = Submission.expected_score_pattern.search(line)
-                if m:
-                    self.expected_grades = m.group("grades").split()
-                    if self.expected_total_grade == "AC":
-                        logging.warning(
-                            f"AC submission {self} (line {l+1}) contains EXPECTED_GRADES. "
-                            "(Ignored, consider removing it.)"
-                        )
-                    break
+        self.expected_grades: List[str] = Submission._get_expected_grades(path)
+        if self.expected_grades is not None and expected_total_grade == "AC":
+            logging.warning(
+                f"AC submission {self} contains EXPECTED_GRADES. "
+                "(Ignored, consider removing it.)"
+            )
 
     def __str__(self):
-        return self.filename
+        return self.name  # TODO: Maybe this should include language
 
 
 class Problem:
@@ -164,7 +174,9 @@ class Problem:
         self.submissions: List[Submission] = []
 
         s = tc_id = None
+        lineno = 0
         for line in inputstream:
+            lineno += 1
             for p in patterns:
                 match = patterns[p].search(line)
                 if match:
@@ -187,7 +199,7 @@ class Problem:
                 print(" " * 80, end="\r")
                 print(f"\033[01mScoring problem: {problemname}\033[0m")
             elif p == "START_SUBMISSION":
-                s = Submission(problempath, d["type"], d["filename"])
+                s = Submission(problempath, d["type"], d["name"])
             elif p == "START_TESTGROUP":
                 tc_times: List[float] = []
             elif p == "AC_TC_RESULT":
@@ -196,13 +208,22 @@ class Problem:
                 tc_id = d["case"]
             elif p == "TESTGROUP_GRADE":
                 grade = d["grade"]
+                assert s is not None
                 if d["type"] == "sample":
-                    assert s is not None and len(s.verdicts) == 0
+                    if len(s.verdicts) > 0:
+                        logging.error(
+                            f"Unexpected sample grade in line {lineno} of verifyproblem"
+                        )
                 else:
-                    assert s is not None and len(s.verdicts) == int(d["number"])
-                    assert grade != "AC" or len(
-                        tc_times
-                    )  # secret test group must have at least one tc for AC
+                    if len(s.verdicts) != int(d["number"]):
+                        logging.error(
+                            f"Unexpected group grade in line {lineno} of verifyproblem"
+                        )
+                    if grade == "AC" and len(tc_times) == 0:
+                        logging.error(
+                            f"{lineno} of verifyproblem: "
+                            f"AC grade for secret group requires at least one test case"
+                        )
                 s.verdicts.append(
                     Verdict(grade, max(tc_times) if len(tc_times) else None)
                 )
@@ -218,9 +239,12 @@ class Problem:
             print(statusline[:80], end="\r")
 
         self.num_secret_groups: int = max(len(s.verdicts) for s in self.submissions) - 1
-        assert all(
-            len(s.verdicts) == 1 + self.num_secret_groups for s in self.submissions
-        )
+        for s in self.submissions:
+            if len(s.verdicts) != self.num_secret_groups + 1:
+                logging.error(
+                    f"Submission {s} has {len(s.verdicts)} verdicts."
+                    f" (Expected {self.num_secret_groups + 1}.)"
+                )
 
 
 def print_table(log):
@@ -234,7 +258,7 @@ def print_table(log):
     print(" ".join(f"Group {i} " for i in range(1, log.num_secret_groups + 1)), end=" ")
     print("Pts Time  Expected\033[0m")
     for s in log.submissions:
-        print(f"{s.filename:{alignto}}", end=" ")
+        print(f"{s.name:{alignto}}", end=" ")
         for verdict in s.verdicts:
             print(f"{verdict:17}", end=" ")
         print(f"{s.points:3}", end=" ")
@@ -260,7 +284,7 @@ def print_table(log):
         for s, groups in warnings.items():
             for i in groups:
                 logging.warning(
-                    f"{s}: Unexpected grade {s.verdicts[i+1].grade} on test group {i}. "
+                    f"{s}: Unexpected grade {s.verdicts[i+1].grade} on test group {i+1}. "
                     f"(Expected {s.expected_grades[i]})."
                 )
     if suggestions:
@@ -308,7 +332,6 @@ def main():
         inputstream = verifyproblem.stdout
     else:
         inputstream = args.logfile
-    assert Path(args.problemdir).is_dir()
     problempath = Path(args.problemdir).resolve()
 
     problem = Problem(problempath, inputstream)
