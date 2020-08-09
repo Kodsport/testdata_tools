@@ -8,11 +8,10 @@
 #  At most 9 groups
 #  Points are at most three digits
 
-import re, sys, subprocess, yaml, argparse, io
+import re, sys, subprocess, yaml, argparse, itertools, logging
 from pathlib import Path
-from collections import defaultdict
-from typing import List, Optional, Tuple
-import logging
+from collections import defaultdict, OrderedDict
+from typing import List, Optional, Tuple, Dict
 
 
 def parse_args():
@@ -130,26 +129,27 @@ class Submission:
     )
 
     @staticmethod
-    def _get_expected_grades(path: Path) -> Optional[List[str]]:
+    def _get_expected_grades(path: Path) -> Dict[str, str]:
         if path.is_file():
             with open(path, encoding="utf-8") as sourcefile:
                 for l, line in enumerate(sourcefile):
                     m = Submission.expected_score_pattern.search(line)
                     if m:
-                        return m.group("grades").split()
+                        gradelist = m.group("grades").split()
+                        return {str(i + 1): g for (i, g) in enumerate(gradelist)}
         else:
             for child in path.iterdir():
                 grades = Submission._get_expected_grades(child)
                 if grades is not None:
                     return grades
                 # TODO (low prio): Check for presence of multiple files containg grade hints
-        return None
+        return {}
 
     def __init__(self, problempath, expected_total_grade, name):
         self.problempath = problempath
         self.name = name
         self.expected_total_grade = expected_total_grade
-        self.verdicts: List[Verdict] = []
+        self.verdict: OrderedDict[str, Verdict] = {}
         self.maxtime: Optional[float] = None
         self.points: Optional[int] = None
         path = (
@@ -158,8 +158,8 @@ class Submission:
             / Path(Submission.subdir[self.expected_total_grade])
             / self.name
         )
-        self.expected_grades: List[str] = Submission._get_expected_grades(path)
-        if self.expected_grades is not None and expected_total_grade == "AC":
+        self.expected_grades: Dict[str, str] = Submission._get_expected_grades(path)
+        if self.expected_grades and expected_total_grade == "AC":
             logging.warning(
                 f"AC submission {self} contains EXPECTED_GRADES. "
                 "(Ignored, consider removing it.)"
@@ -174,7 +174,7 @@ class Problem:
         self.submissions: List[Submission] = []
 
         s = tc_id = None
-        lineno = 0
+        lineno = max_group_id = 0
         for line in inputstream:
             lineno += 1
             for p in patterns:
@@ -210,23 +210,18 @@ class Problem:
                 grade = d["grade"]
                 assert s is not None
                 if d["type"] == "sample":
-                    if len(s.verdicts) > 0:
-                        logging.error(
-                            f"Unexpected sample grade in line {lineno} of verifyproblem"
-                        )
+                    s.verdict["sample"] = Verdict(
+                        grade, max(tc_times) if len(tc_times) else None
+                    )
                 else:
-                    if len(s.verdicts) != int(d["number"]):
-                        logging.error(
-                            f"Unexpected group grade in line {lineno} of verifyproblem"
-                        )
                     if grade == "AC" and len(tc_times) == 0:
                         logging.error(
                             f"{lineno} of verifyproblem: "
                             f"AC grade for secret group requires at least one test case"
                         )
-                s.verdicts.append(
-                    Verdict(grade, max(tc_times) if len(tc_times) else None)
-                )
+                    group_id = int(d["number"])
+                    max_group_id = max(group_id, max_group_id)
+                    s.verdict[str(group_id)] = Verdict(grade, max(tc_times))
             elif p == "END_SUBMISSION":
                 assert s is not None
                 s.points = int(d["points"] or "0")
@@ -238,13 +233,11 @@ class Problem:
             print(" " * 80, end="\r")
             print(statusline[:80], end="\r")
 
-        self.num_secret_groups: int = max(len(s.verdicts) for s in self.submissions) - 1
+        self.groups = list(str(i) for i in range(1, max_group_id + 1))
+        allgroups = ["sample"] + self.groups
         for s in self.submissions:
-            if len(s.verdicts) != self.num_secret_groups + 1:
-                logging.error(
-                    f"Submission {s} has {len(s.verdicts)} verdicts."
-                    f" (Expected {self.num_secret_groups + 1}.)"
-                )
+            if list(s.verdict.keys()) != allgroups:  # Note: this is order-sensitive
+                logging.error(f"Unexpected group name for submission {s}.")
 
 
 def print_table(log):
@@ -255,36 +248,35 @@ def print_table(log):
         alignto = len("Submission")
     print("\033[01m", end="")
     print(f"{'Submission':{alignto}} Sample  ", end=" ")
-    print(" ".join(f"Group {i} " for i in range(1, log.num_secret_groups + 1)), end=" ")
+    print(" ".join(f"Group {i} " for i in log.groups), end=" ")
     print("Pts Time  Expected\033[0m")
     for s in log.submissions:
         print(f"{s.name:{alignto}}", end=" ")
-        for verdict in s.verdicts:
+        for verdict in s.verdict.values():
             print(f"{verdict:17}", end=" ")
         print(f"{s.points:3}", end=" ")
         print(f"{s.maxtime:4.2f}s", end=" ")
 
         if s.expected_total_grade == "AC":
-            s.expected_grades = ["AC"] * log.num_secret_groups
+            s.expected_grades = {i: "AC" for i in log.groups}
         if s.expected_grades:
             summary = []
-            for i in range(log.num_secret_groups):
-                if s.expected_grades[i] == s.verdicts[i + 1].grade:
+            for i in log.groups:
+                if s.expected_grades[i] == s.verdict[i].grade:
                     summary.append("\033[32my\033[0m")
-
                 else:
                     summary.append("\033[91mn\033[0m")
                     warnings[s].append(i)
         else:
-            summary = ["."] * log.num_secret_groups
-            suggestions.append((s, " ".join(v.grade for v in s.verdicts[1:])))
-
+            summary = ["."] * len(log.groups)
+            all_grades = [v.grade for v in s.verdict.values()]
+            suggestions.append((s, " ".join(all_grades[1:])))
         print("".join(summary))
     if warnings:
-        for s, groups in warnings.items():
-            for i in groups:
+        for s, warngroups in warnings.items():
+            for i in warngroups:
                 logging.warning(
-                    f"{s}: Unexpected grade {s.verdicts[i+1].grade} on test group {i+1}. "
+                    f"{s}: Unexpected grade {s.verdict[i].grade} on test group {i}. "
                     f"(Expected {s.expected_grades[i]})."
                 )
     if suggestions:
@@ -297,18 +289,17 @@ def print_table(log):
 def check_distinguished(log):
     accepting_subs = defaultdict(list)
     for s in log.submissions:
-        for group, v in enumerate(s.verdicts):
+        for i, v in s.verdict.items():
             if v.grade == "AC":
-                accepting_subs[group].append(s)
+                accepting_subs[i].append(s)
     ok = True
-    for i in range(1, log.num_secret_groups):
-        for j in range(i + 1, log.num_secret_groups + 1):
-            if accepting_subs[i] == accepting_subs[j]:
-                logging.warning(
-                    f"No submission distinguishes test groups {i} and {j}. "
-                    "Consider adding one, or merging groups."
-                )
-                ok = False
+    for i, j in itertools.combinations(log.groups, 2):
+        if accepting_subs[i] == accepting_subs[j]:
+            logging.warning(
+                f"No submission distinguishes test groups {i} and {j}. "
+                "Consider adding one, or merging groups."
+            )
+            ok = False
     if ok:
         print(
             "\033[32mOK: \033[0mAll secret test groups distinguished by some submission"
