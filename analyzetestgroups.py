@@ -8,7 +8,7 @@
 #  At most 9 groups
 #  Points are at most three digits
 
-import re, sys, subprocess, yaml, argparse, itertools, logging
+import re, sys, subprocess, yaml, argparse, itertools, logging, enum
 from pathlib import Path
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Tuple, Dict
@@ -45,8 +45,8 @@ def parse_args():
     return argsparser.parse_args()
 
 
-patterns = {
-    "END_SUBMISSION": re.compile(
+class Pattern(enum.Enum):
+    END_SUBMISSION = re.compile(
         r"""
         (?P<type>\S+)
         \s+
@@ -64,9 +64,9 @@ patterns = {
         \[.*CPU:\s(?P<maxtime>\d+.\d+)s.*\]
         """,
         re.VERBOSE,
-    ),
-    "FIRST_LINE": re.compile(r"Loading problem (?P<problemname>\S+)"),
-    "TESTGROUP_GRADE": re.compile(
+    )
+    FIRST_LINE = re.compile(r"Loading problem (?P<problemname>\S+)")
+    TESTGROUP_GRADE = re.compile(
         r"""INFO\ :\ Grade\ on\ test\ case\ group\ data/
         (?P<type>sample|secret/group)
         ((?P<number>\d+))?
@@ -75,14 +75,14 @@ patterns = {
         \s+
         (?P<grade>\S+)""",
         re.VERBOSE,
-    ),
-    "START_SUBMISSION": re.compile(
+    )
+    START_SUBMISSION = re.compile(
         r"INFO : Check (?P<type>\S+) submission (?P<name>\S+)"
-    ),
-    "START_TESTGROUP": re.compile(
+    )
+    START_TESTGROUP = re.compile(
         r"INFO : Running on test case group data/(sample|secret/group(?P<number>\d+))"
-    ),
-    "AC_TC_RESULT": re.compile(
+    )
+    AC_TC_RESULT = re.compile(
         r"""[T|t]est\ file\ result.*AC.*CPU:\s
         (?P<time>\d+.\d+)
         .*
@@ -90,11 +90,10 @@ patterns = {
         (?P<case>[^\]]+)
         """,
         re.VERBOSE,
-    ),
-    "TIMELIMIT": re.compile(
+    )
+    TIMELIMIT = re.compile(
         r"setting timelim to (?P<limit>\d+) secs, safety margin to (?P<safety>\d+) secs"
-    ),
-}
+    )
 
 
 class Verdict:
@@ -177,14 +176,14 @@ class Problem:
         lineno = max_group_id = 0
         for line in inputstream:
             lineno += 1
-            for p in patterns:
-                match = patterns[p].search(line)
+            for p in Pattern:
+                match = p.value.search(line)
                 if match:
                     break
             else:
                 continue
             d = match.groupdict()
-            if p == "FIRST_LINE":
+            if p == Pattern.FIRST_LINE:
                 problemname = d["problemname"]
                 if problemname != problempath.stem:
                     exit(
@@ -198,15 +197,15 @@ class Problem:
                         )
                 print(" " * 80, end="\r")
                 print(f"\033[01mScoring problem: {problemname}\033[0m")
-            elif p == "START_SUBMISSION":
+            elif p == Pattern.START_SUBMISSION:
                 s = Submission(problempath, d["type"], d["name"])
-            elif p == "START_TESTGROUP":
+            elif p == Pattern.START_TESTGROUP:
                 tc_times: List[float] = []
-            elif p == "AC_TC_RESULT":
+            elif p == Pattern.AC_TC_RESULT:
                 print(problemname, s, end="\r")
                 tc_times.append(float(d["time"]))
                 tc_id = d["case"]
-            elif p == "TESTGROUP_GRADE":
+            elif p == Pattern.TESTGROUP_GRADE:
                 grade = d["grade"]
                 assert s is not None
                 if d["type"] == "sample":
@@ -222,12 +221,12 @@ class Problem:
                     group_id = int(d["number"])
                     max_group_id = max(group_id, max_group_id)
                     s.verdict[str(group_id)] = Verdict(grade, max(tc_times))
-            elif p == "END_SUBMISSION":
+            elif p == Pattern.END_SUBMISSION:
                 assert s is not None
                 s.points = int(d["points"] or "0")
                 s.maxtime = float(d["maxtime"])
                 self.submissions.append(s)
-            elif p == "TIMELIMIT":
+            elif p == Pattern.TIMELIMIT:
                 self.timelimits = int(d["limit"]), int(d["safety"])
             statusline = f"Submission {s}, test case {tc_id}"
             print(" " * 80, end="\r")
