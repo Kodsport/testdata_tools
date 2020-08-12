@@ -34,13 +34,11 @@ def parse_args():
         help="read logfile instead of running verifyproblem -l info",
     )
     argsparser.add_argument(
-        "-n",
-        "--no-warnings",
-        help="don't show warnings",
-        action="store_const",
-        dest="loglevel",
-        const=logging.ERROR,
-        default=logging.WARNING,
+        "-l",
+        "--loglevel",
+        help="set the logger's verbosity threshold (default 'info')",
+        choices=["info", "warning", "error"],
+        default="info",
     )
     return argsparser.parse_args()
 
@@ -202,7 +200,7 @@ class Problem:
             elif p == Pattern.TESTGROUP_GRADE:
                 assert s is not None
                 s.verdict["sample" if d["type"] == "sample" else d["number"]] = Verdict(
-                        d["grade"], max(tc_times)  if len(tc_times) else None
+                    d["grade"], max(tc_times) if len(tc_times) else None
                 )
                 if d["type"] != "sample":
                     if d["grade"] == "AC" and len(tc_times) == 0:
@@ -270,7 +268,7 @@ def print_table(log):
                 )
     if suggestions:
         for s, expectations in suggestions:
-            logging.warning(
+            logging.info(
                 f"{s}: No hint found. Consider adding '@EXPECTED_GRADES@ {expectations}'."
             )
 
@@ -294,17 +292,22 @@ def check_distinguished(log):
             "\033[32mOK: \033[0mAll secret test groups distinguished by some submission"
         )
 
+
 def main():
     args = parse_args()
+
     logging.basicConfig(
-        format="\033[91m%(levelname)s: \033[0m %(message)s", level=args.loglevel
+        format="\033[91m%(levelname)s:\033[0m %(message)s",
+        level={
+            "info": logging.INFO,
+            "warning": logging.WARNING,
+            "error": logging.ERROR,
+        }[args.loglevel],
     )
     with open(Path(args.problemdir) / "problem.yaml", encoding="utf-8") as file:
         problemtype = yaml.safe_load(file).get("type")
         if problemtype != "scoring":
-            logging.critical(
-                f"{args.problemdir} is not a scoring problem. Aborting..."
-            )
+            logging.critical(f"{args.problemdir} is not a scoring problem. Aborting...")
             exit(1)
     if not args.logfile:
         verifyproblem = subprocess.Popen(
