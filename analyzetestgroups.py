@@ -189,14 +189,8 @@ class Problem:
                     exit(
                         f"FATAL: Problem directory does not match log file ({problemname}). Aborting..."
                     )
-                with open(problempath / "problem.yaml", encoding="utf-8") as file:
-                    problemtype = yaml.safe_load(file).get("type")
-                    if problemtype != "scoring":
-                        exit(
-                            f"FATAL: {problemname} is is not a scoring problem. Aborting..."
-                        )
                 print(" " * 80, end="\r")
-                print(f"\033[01mScoring problem: {problemname}\033[0m")
+                print(f"\033[01mAnalyzing problem: {problemname}\033[0m")
             elif p == Pattern.START_SUBMISSION:
                 s = Submission(problempath, d["type"], d["name"])
             elif p == Pattern.START_TESTGROUP:
@@ -206,21 +200,17 @@ class Problem:
                 tc_times.append(float(d["time"]))
                 tc_id = d["case"]
             elif p == Pattern.TESTGROUP_GRADE:
-                grade = d["grade"]
                 assert s is not None
-                if d["type"] == "sample":
-                    s.verdict["sample"] = Verdict(
-                        grade, max(tc_times) if len(tc_times) else None
-                    )
-                else:
-                    if grade == "AC" and len(tc_times) == 0:
+                s.verdict["sample" if d["type"] == "sample" else d["number"]] = Verdict(
+                        d["grade"], max(tc_times)  if len(tc_times) else None
+                )
+                if d["type"] != "sample":
+                    if d["grade"] == "AC" and len(tc_times) == 0:
                         logging.error(
                             f"{lineno} of verifyproblem: "
                             f"AC grade for secret group requires at least one test case"
                         )
-                    group_id = int(d["number"])
-                    max_group_id = max(group_id, max_group_id)
-                    s.verdict[str(group_id)] = Verdict(grade, max(tc_times))
+                    max_group_id = max(int(d["number"]), max_group_id)
             elif p == Pattern.END_SUBMISSION:
                 assert s is not None
                 s.points = int(d["points"] or "0")
@@ -304,12 +294,18 @@ def check_distinguished(log):
             "\033[32mOK: \033[0mAll secret test groups distinguished by some submission"
         )
 
-
 def main():
     args = parse_args()
     logging.basicConfig(
         format="\033[91m%(levelname)s: \033[0m %(message)s", level=args.loglevel
     )
+    with open(Path(args.problemdir) / "problem.yaml", encoding="utf-8") as file:
+        problemtype = yaml.safe_load(file).get("type")
+        if problemtype != "scoring":
+            logging.critical(
+                f"{args.problemdir} is not a scoring problem. Aborting..."
+            )
+            exit(1)
     if not args.logfile:
         verifyproblem = subprocess.Popen(
             ["verifyproblem", args.problemdir, "-l info"],
