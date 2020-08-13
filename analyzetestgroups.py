@@ -224,9 +224,6 @@ class VerificationLogParser:
         for line in inputstream:
             self.lineno += 1
             self.parseline(line)
-            statusline = f"Submission {self.sub}, test case {self.tc_id}"
-            print(" " * 80, end="\r")
-            print(statusline[:80], end="\r")
 
     def parseline(self, line):
         """Dispatch the given line among the class methods, based on which
@@ -236,6 +233,9 @@ class VerificationLogParser:
             match = pattern.search(line)
             if match:
                 fun(self, match.groupdict())
+                statusline = f"Submission {self.sub}, test case {self.tc_id}"
+                print(" " * 80, end="\r")
+                print(statusline[:80], end="\r")
 
     def _first_line(self, matchgroup):
         """Loading problem <problemname>"""
