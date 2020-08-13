@@ -432,7 +432,7 @@ class Problem:
                     i,
                     j,
                 )
-            all_distinguished = False
+                all_distinguished = False
         if all_distinguished:
             print(
                 "\033[32mOK: \033[0mAll secret test groups distinguished by some submission"
