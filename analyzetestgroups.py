@@ -3,7 +3,7 @@
  Provides a human-readable summary of the output of
     verifyproblem <problemdir> -l info
  for use with scoring problems and mutiple test groups.
- Compares the actual grades determined by verifyproblem with expected
+ ompares the actual grades determined by verifyproblem with expected
  grades specified in the submission source code (if found).
  Also checks that each pair of test groups is actually distinguished
  by some submission.
@@ -45,7 +45,7 @@ import subprocess
 import argparse
 import itertools
 import logging
-from enum import Enum
+from enum import Enum, auto
 from pathlib import Path
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Union, Tuple, Dict, Callable, Pattern, TextIO
@@ -82,18 +82,34 @@ def parse_args() -> argparse.Namespace:
     )
     return argsparser.parse_args()
 
+
 class Grade(Enum):
-    """Possible test group grades."""
-    AC = 1
-    WA = 2
-    TLE = 3
-    RTE = 4
-    JE = 5
+    """Test group grade, i.e., the grade that a submission can get on a single test group."""
+
+    AC = auto()
+    WA = auto()
+    TLE = auto()
+    RTE = auto()
+    JE = auto()
 
     def __str__(self):
         """AC is green, everything else is red"""
         res = "\033[32m" if self == Grade.AC else "\033[91m"
         return res + f"{self.name}\033[0m"
+
+
+class SubmissionType(Enum):
+    """The type of a submission is the *expected* final grades, as
+    indicated by its placement in subdirectory.
+            <problemname>/submissions/<subdir_grade>/name
+    In verifyproblem.py, this is called the expected_verdict of the submission.
+    """
+
+    AC = "accepted"
+    PAC = "partially_accepted"
+    WA = "wrong_answer"
+    RTE = "run_time_error"
+    TLE = "time_limit_exceeded"
 
 
 class Verdict:
@@ -127,11 +143,8 @@ class Submission:
 
     Attributes:
         name: the submission name, typically a source file or a directory
-        expected_total_grade: the expected final grade for all test groups,
-            one of 'AC', 'PAC', 'WA', 'RTE', TLE' as indicated by the placement
-            of the submission in the directory structure:
-            <problemname>/submissions/<expected_total_grade>/name
-            In verifyproblem.py this is called expected_verdict.
+        type (SubmissionType): the expected final grade for all test groups,
+            as indicated by the submission's subdiretory
         verdict (OrderedDict[str, Verdict]): maps test group names
             "sample", "1", "2", ... to their Verdict.
             Keys are  in that order.
@@ -139,14 +152,6 @@ class Submission:
             by verifyproblem
         points (int): The total number of points as determined by Verifyproblem.
     """
-
-    subdir = {
-        "AC": "accepted",
-        "PAC": "partially_accepted",
-        "WA": "wrong_answer",
-        "RTE": "run_time_error",
-        "TLE": "time_limit_exceeded",
-    }
 
     expected_score_pattern = re.compile(
         r"@EXPECTED_GRADES@ (?P<grades>((WA|AC|TLE|RTE|JE)\s*)+)"
@@ -177,30 +182,25 @@ class Submission:
         group is "AC" no matter what the source file says.
         Empty if no such line is found.
         """
-        return self.expected_total_grade == "AC" or len(self._expected_grades)
+        return self.type == SubmissionType.AC or len(self._expected_grades)
 
     def expected_grade(self, i: str) -> Grade:
         """Returns the expected grade on secret group i."""
-        if self.expected_total_grade == "AC":
+        if self.type == SubmissionType.AC:
             return Grade.AC
         return self._expected_grades[i]
 
-    def __init__(self, problempath, expected_total_grade, name):
+    def __init__(self, problempath, stype: SubmissionType, name: str):
         self.name = name
-        self.expected_total_grade = expected_total_grade
+        self.type: SubmissionType = stype
         self.verdict: Dict[
             str, Verdict
         ] = OrderedDict()  # Note: the type is collections.OrderedDict
         self.maxtime: Optional[float] = None
         self.points: Optional[int] = None
-        path = (
-            problempath
-            / "submissions"
-            / Path(Submission.subdir[self.expected_total_grade])
-            / self.name
-        )
+        path = problempath / "submissions" / Path(self.type.value) / self.name
         self._expected_grades: Dict[str, Grade] = Submission._get_expected_grades(path)
-        if len(self._expected_grades) > 0 and expected_total_grade == "AC":
+        if len(self._expected_grades) > 0 and self.type == SubmissionType.AC:
             logging.warning(
                 "AC submission %s contains EXPECTED_GRADES. "
                 "(Ignored, consider removing it.)",
@@ -261,7 +261,9 @@ class VerificationLogParser:
 
     def _start_submission(self, matchgroup):
         """INFO : Check <type> submission <name>")"""
-        self.sub = Submission(self.problem.path, matchgroup["type"], matchgroup["name"])
+        self.sub = Submission(
+            self.problem.path, SubmissionType[matchgroup["type"]], matchgroup["name"]
+        )
 
     def _start_testgroup(self, _):
         r"INFO : Running on test case group data/(sample|secret/group<number>)"
