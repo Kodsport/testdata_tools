@@ -45,9 +45,10 @@ import subprocess
 import argparse
 import itertools
 import logging
+from enum import Enum
 from pathlib import Path
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Union, Tuple, Dict, Callable, Pattern, TextIO
 
 import yaml
 
@@ -81,28 +82,37 @@ def parse_args() -> argparse.Namespace:
     )
     return argsparser.parse_args()
 
+class Grade(Enum):
+    """Possible test group grades."""
+    AC = 1
+    WA = 2
+    TLE = 3
+    RTE = 4
+    JE = 5
+
+    def __str__(self):
+        """AC is green, everything else is red"""
+        res = "\033[32m" if self == Grade.AC else "\033[91m"
+        return res + f"{self.name}\033[0m"
+
 
 class Verdict:
-    """The grader's verdict for a single test group.
+    """The grader's verdict for a single test group, such as AC:3.21s or WA
 
     Attributes:
-        grade (str): One of 'AC', 'WA', 'TLE', 'RTE', 'JE'
+        grade (Grade): the grade
         time (float): Slowest time for any test case in this group. Else None.
 
     Attribute time is only non-None for AC grades. Note that time can
     be None even for AC grades (e.g., empty sample input in an interactive problem).
     """
 
-    def __init__(self, grade, time=None):
+    def __init__(self, grade: Grade, time=None):
         self.grade = grade
-        if grade == "AC":
-            self.time = time
-        else:
-            self.time = None
+        self.time = time if grade == Grade.AC else None
 
     def __str__(self):
-        res = "\033[32m" if self.grade == "AC" else "\033[91m"
-        res += f"{self.grade}\033[0m"
+        res = str(self.grade)
         if self.time is not None:
             res += f":{self.time}s"
         return res
@@ -138,17 +148,17 @@ class Submission:
     }
 
     expected_score_pattern = re.compile(
-        r"@EXPECTED_GRADES@ (?P<grades>((WA|AC|TLE|RTE|MLE)\s*)+)"
+        r"@EXPECTED_GRADES@ (?P<grades>((WA|AC|TLE|RTE|JE)\s*)+)"
     )
 
     @staticmethod
-    def _get_expected_grades(path: Path) -> Dict[str, str]:
+    def _get_expected_grades(path: Path) -> Dict[str, Grade]:
         if path.is_file():
             with open(path, encoding="utf-8") as sourcefile:
                 for line in sourcefile:
                     match = Submission.expected_score_pattern.search(line)
                     if match:
-                        gradelist = match.group("grades").split()
+                        gradelist = (Grade[g] for g in match.group("grades").split())
                         return {str(i + 1): g for (i, g) in enumerate(gradelist)}
         else:
             for child in path.iterdir():
@@ -168,10 +178,10 @@ class Submission:
         """
         return self.expected_total_grade == "AC" or len(self._expected_grades)
 
-    def expected_grade(self, i: str):
+    def expected_grade(self, i: str) -> Grade:
         """Returns the expected grade on secret group i."""
         if self.expected_total_grade == "AC":
-            return "AC"
+            return Grade.AC
         return self._expected_grades[i]
 
     def __init__(self, problempath, expected_total_grade, name):
@@ -188,7 +198,7 @@ class Submission:
             / Path(Submission.subdir[self.expected_total_grade])
             / self.name
         )
-        self._expected_grades: Dict[str, str] = Submission._get_expected_grades(path)
+        self._expected_grades: Dict[str, Grade] = Submission._get_expected_grades(path)
         if len(self._expected_grades) > 0 and expected_total_grade == "AC":
             logging.warning(
                 "AC submission %s contains EXPECTED_GRADES. "
@@ -219,13 +229,13 @@ class VerificationLogParser:
         self.lineno = 0
         self.max_group_id = 0  # largest secret group ID yet seen
 
-    def parse(self, inputstream):
+    def parse(self, inputstream: TextIO) -> None:
         """Parse all of inputstream, incrementally building self.problem"""
         for line in inputstream:
             self.lineno += 1
             self.parseline(line)
 
-    def parseline(self, line):
+    def parseline(self, line: str) -> None:
         """Dispatch the given line among the class methods, based on which
         VerificationLogParser.pattern matches.
         """
@@ -265,14 +275,14 @@ class VerificationLogParser:
     def _testgroup_grade(self, matchgroup):
         """INFO : Grade on test case group ... <type> ... <number> is <grade>"""
         assert self.sub is not None
-        grade = matchgroup["grade"]
+        grade = Grade[matchgroup["grade"]]
         time = max(self.tc_times) if len(self.tc_times) > 0 else None
         if matchgroup["type"] == "sample":
             self.sub.verdict["sample"] = Verdict(grade, time)
         else:
             i = matchgroup["number"]
             self.sub.verdict[i] = Verdict(grade, time)
-            if grade == "AC" and time is None:
+            if grade == Grade.AC and time is None:
                 logging.error(
                     "Line %d of verifyproblem: "
                     "AC grade for secret group %d requires at least one test case",
@@ -292,7 +302,7 @@ class VerificationLogParser:
         """setting timelim to <limit> secs, safety margin to <safety> secs"""
         self.problem.timelimits = int(matchgroup["limit"]), int(matchgroup["safety"])
 
-    patterns = {
+    patterns: Dict[Callable, Pattern] = {
         _first_line: re.compile(r"Loading problem (?P<problemname>\S+)"),
         _testgroup_grade: re.compile(
             r"""INFO\ :\ Grade\ on\ test\ case\ group\ data/
@@ -351,7 +361,7 @@ class Problem:
             by verifyproblem
     """
 
-    def __init__(self, problempath, inputstream):
+    def __init__(self, problempath, inputstream: Union[TextIO]):
         self.path = problempath
         self.submissions: List[Submission] = []
         self.timelimits = None, None
@@ -395,7 +405,7 @@ class Problem:
                         warnings[sub].append(i)
             else:
                 summary = ["."] * len(self.groups)
-                all_grades = [v.grade for v in sub.verdict.values()]
+                all_grades = [str(Grade(v.grade)) for v in sub.verdict.values()]
                 suggestions.append((sub, " ".join(all_grades[1:])))
             print("".join(summary))
         for sub, warngroups in warnings.items():
@@ -421,7 +431,7 @@ class Problem:
         accepting_subs = defaultdict(list)
         for sub in self.submissions:
             for i, verdict in sub.verdict.items():
-                if verdict.grade == "AC":
+                if verdict.grade == Grade.AC:
                     accepting_subs[i].append(sub)
         all_distinguished = True
         for i, j in itertools.combinations(self.groups, 2):
