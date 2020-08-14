@@ -144,6 +144,7 @@ class Submission:
         "AC": "accepted",
         "PAC": "partially_accepted",
         "WA": "wrong_answer",
+        "RTE": "run_time_error",
         "TLE": "time_limit_exceeded",
     }
 
