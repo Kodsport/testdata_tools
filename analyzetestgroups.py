@@ -9,19 +9,23 @@
  by some submission.
 
  Example:
- $ python3 analyzetestgroups.py examples/arithmetic2
- Analyzing problem: arithmetic2
- WARNING: AC submission arithmetic.py contains EXPECTED_GRADES. (Ignored, consider removing it.)
- Submission        Sample   Group 1  Group 2  Group 3  Group 4  Pts Time  Expected
- arithmetic.cpp    AC:0.01s AC:0.0s  AC:0.01s AC:0.01s AC:0.01s 100 0.01s yyyy
- arithmetic.py     AC:0.05s AC:0.05s AC:0.05s AC:0.05s AC:0.05s 100 0.05s yyyy
- arithmetic_ld.cpp WA       AC:0.01s AC:0.01s AC:0.01s WA        75 0.01s yyny
- arithmetic_d.cpp  WA       AC:0.01s AC:0.01s WA       WA        50 0.01s ....
- arithmetic_dir    WA       AC:0.02s AC:0.02s WA       WA        50 0.02s yyyy
- WARNING: arithmetic_ld.cpp: Unexpected grade AC on test group 3. (Expected WA).
- INFO: arithmetic_d.cpp: No hint found. Consider adding '@EXPECTED_GRADES@ AC AC WA WA'.
- Time limit: 1s, safe: 2s
- WARNING: No submission distinguishes test groups 1 and 2. Consider adding one, or merging groups.
+    $ python3 analyzetestgroups.py examples/arithmetic
+    Analyzing problem: arithmetic
+    WARNING: AC submission arithmetic.py contains EXPECTED_GRADES. (Ignored, consider removing it.)
+    Submission        Sample   Group 1  Group 2  Group 3  Group 4  Pts Time  Expected
+    arithmetic.cpp    AC:0.01s AC:0.01s AC:0.01s AC:0.01s AC:0.01s 100 0.01s yyyy
+    arithmetic.py     AC:0.03s AC:0.03s AC:0.03s AC:0.04s AC:0.04s 100 0.04s yyyy
+    arithmetic_ld.cpp WA       AC:0.01s AC:0.01s AC:0.0s  WA        75 0.01s ....
+    arithmetic_dir    WA       AC:0.0s  AC:0.0s  WA       WA        50 0.00s yyyy
+    arithmetic_d.cpp  WA       AC:0.0s  AC:0.01s WA       WA        50 0.01s ....
+    c_equals_one.py   WA       WA       WA       AC:0.03s WA        25 0.03s yyyy
+    slowmult.py       TLE      AC:0.03s TLE      TLE      TLE       25 3.11s ynyy
+    false.py          RTE      RTE      RTE      RTE      RTE        0 0.03s yyyy
+    WARNING: slowmult.py: Unexpected grade TLE on test group 2. (Expected AC).
+    INFO: arithmetic_ld.cpp: No hint found. Consider adding '@EXPECTED_GRADES@ AC AC AC WA'.
+    INFO: arithmetic_d.cpp: No hint found. Consider adding '@EXPECTED_GRADES@ AC AC WA WA'.
+    Time limit: 1s, safe: 2s
+    OK: All secret test groups distinguished by some submission
 
  Verbosity can be specified using --loglevel ('info', 'warning', 'error').
 
