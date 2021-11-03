@@ -375,6 +375,10 @@ tc () {
 
 # Arguments: ../manual-tests/testcasename.in
 tc_manual () {
+  local name="$2"
+  if [[ $# == 1 ]]; then
+      name=$(_base "$1")
+  fi
   tc $(_base "$1") cat "$1"
 }
 
