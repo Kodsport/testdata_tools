@@ -342,9 +342,9 @@ class VerificationLogParser:
         \s+ submission \s+
         (?P<name>\S+)
         \s+
-        \((?P<language>[^)]+)\)
+        \((?P<language>.*)\)
         \s+
-        (?P<status>\S+)
+        (?P<status>OK with extra time:|OK:|got|\S+)
         \s+
         (?P<grade>\S+)
         \s+
@@ -477,7 +477,7 @@ def main():
             sys.exit(1)
     if not args.logfile:
         verifyproblem = subprocess.Popen(
-            ["verifyproblem", args.problemdir, "-l info"],
+            ["verifyproblem", args.problemdir, "-l", "info", "-p", "submissions"],
             stdout=subprocess.PIPE,
             encoding="utf-8",
             universal_newlines=True,
