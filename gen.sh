@@ -259,6 +259,14 @@ limits () {
   fi
 }
 
+output_validator_flags () {
+  if [[ $USE_SCORING == 1 ]]; then
+    echo "output_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
+  else
+    echo "output_validator_flags: $@" >> testdata.yaml
+  fi
+}
+
 _check_missing_samples () {
   for INF in sample/*.in; do
     local name=$(basename "$INF" .in)
