@@ -325,7 +325,7 @@ double IO::Float(double lo, double hi, int decimals, bool strict) {
 	if (res != res) die_line("Floating-point number " + s + " is NaN");
     size_t dot = s.find('.');
     if (dot != string::npos) {
-        int dec = s.size() - dot - 1;
+        int dec = (int)(s.size() - dot - 1);
         if (dec > decimals) {
             die_line("Number " + s + " has " + to_string(dec) + " decimals; " + to_string(decimals) + " is max");
         }
