@@ -118,12 +118,14 @@ compile_java () {
 # Compile a Python program to run.
 # Arguments: file opts
 compile_py () {
-  if [[ $2 == *"pypy"* ]]; then
-    add_program $(_base $1) "pypy $1"
-  elif [[ $2 == *"python2"* ]]; then
-    add_program $(_base $1) "python2 $1"
-  else
+  if [[ $2 == *"cpython3"* ]]; then
     add_program $(_base $1) "python3 $1"
+  elif [[ $2 == *"cpython2"* ]]; then
+    add_program $(_base $1) "python2 $1"
+  elif [[ $2 == *"pypy2"* ]]; then
+    add_program $(_base $1) "pypy $1"
+  else
+    add_program $(_base $1) "pypy3 $1"
   fi
 }
 
