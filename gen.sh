@@ -110,7 +110,10 @@ compile_cpp () {
 # Arguments: file
 compile_java () {
   javac $1
-  cp $(dirname $1)/*.class .
+  if ! [ $(pwd) -ef $(dirname $1) ] # unless $(dirname $1) is the same dir as $(pwd)
+  then
+    cp $(dirname $1)/*.class .
+  fi
   add_program $(_base $1) "java $(_base $1)"
   add_cleanup $(_base $1)
 }
