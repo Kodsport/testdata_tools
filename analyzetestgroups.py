@@ -84,7 +84,17 @@ def parse_args() -> argparse.Namespace:
         choices=["info", "warning", "error"],
         default="info",
     )
+    argsparser.add_argument(
+        "--no-status",
+        action="store_true",
+    )
     return argsparser.parse_args()
+
+
+STATUS_ENABLED = True
+def print_status_line(s: str):
+    if STATUS_ENABLED:
+        print(s, end="\r")
 
 
 class Grade(Enum):
@@ -249,8 +259,8 @@ class VerificationLogParser:
             if match:
                 fun(self, match.groupdict())
                 statusline = f"Submission {self.sub}, test case {self.tc_id}"
-                print(" " * 80, end="\r")
-                print(statusline[:80], end="\r")
+                print_status_line(" " * 80)
+                print_status_line(statusline[:80])
 
     def _first_line(self, matchgroup):
         """Loading problem <problemname>"""
@@ -260,7 +270,7 @@ class VerificationLogParser:
                 f"FATAL: Problem directory does not match log file ({self.problem.name})."
                 "Aborting..."
             )
-        print(" " * 80, end="\r")
+        print_status_line(" " * 80)
         print(f"\033[01mAnalyzing problem: {self.problem.name}\033[0m")
 
     def _start_submission(self, matchgroup):
@@ -275,7 +285,7 @@ class VerificationLogParser:
 
     def _ac_tc_result(self, matchgroup):
         """Test file result ... AC ... <time> ... test case ... <case>"""
-        print(self.problem.name, self.sub, end="\r")
+        print_status_line(f"{self.problem.name} {self.sub}")
         self.tc_times.append(float(matchgroup["time"]))
         self.tc_id = matchgroup["case"]
 
@@ -460,6 +470,9 @@ def main():
     """Parse (typically invoking verifyproblem as a subprocess), analyze, print."""
     args = parse_args()
 
+    global STATUS_ENABLED
+    STATUS_ENABLED = not args.no_status
+
     logging.basicConfig(
         format="\033[91m%(levelname)s:\033[0m %(message)s",
         level={
@@ -483,7 +496,7 @@ def main():
             universal_newlines=True,
             bufsize=1,
         )
-        print("Running", " ".join(verifyproblem.args), "...", end="\r")
+        print_status_line(f"Running {' '.join(verifyproblem.args)}...")
         inputstream = verifyproblem.stdout
     else:
         inputstream = args.logfile
