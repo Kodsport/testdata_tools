@@ -49,6 +49,7 @@ TOTAL_SCORE=0
 HAS_ERROR=0
 TC_INDEX=1
 
+
 declare -A programs
 declare -A cases
 declare -A latestdir
@@ -179,6 +180,7 @@ solve () {
 
 CURGROUP_NAME=.
 CURGROUP_DIR=secret
+CURTEST=
 
 # Use a certain solution as the reference solution
 # Arguments: solution name
@@ -208,6 +210,7 @@ sample () {
   fi
   echo "Solving case sample/$name..."
   solve "sample/$name"
+  CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]=sample
   nicenames[$name]="sample/$name"
@@ -230,6 +233,7 @@ sample_manual () {
     fi
   done
   echo "Using manual solution for $path"
+  CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]=sample
   nicenames[$name]="sample/$name"
@@ -308,6 +312,20 @@ _do_tc () {
   solve "$path"
 }
 
+hint () {
+    if [[ $# == 1 ]]; then
+        local hinttext=$1
+        echo "$hinttext" > "$CURTEST.hint"
+    fi
+}
+
+desc () {
+    if [[ $# == 1 ]]; then
+        local desctext=$1
+        echo "$desctext" > "$CURTEST.desc"
+    fi
+}
+
 _handle_err() {
   _error "crashed while generating case $1"
   # Stop the entire bash process. It will still run _cleanup_programs and wait
@@ -345,6 +363,11 @@ tc () {
         local path="$CURGROUP_DIR/$(_base ${cases[$name]})"
         ${LN}${cases[$name]}.in "$path.in"
         ${LN}${cases[$name]}.ans "$path.ans"
+        for ext in {hint,desc}; do
+            if [ -f ${cases[$name]}.$ext ]; then
+                ${LN}${cases[$name]}.$ext "$path.$ext"
+            fi
+        done
         latestdir[$name]="$CURGROUP_DIR"
         groups[$CURGROUP_NAME]="${groups[$CURGROUP_NAME]} $name"
         echo "Reusing ${nicenames[$name]}"
@@ -364,6 +387,7 @@ tc () {
   # Add an index to the test case name, to enforce evaluation order.
   local path="$CURGROUP_DIR/$(printf '%03d' $TC_INDEX)-$name"
   let TC_INDEX++
+  CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]="$CURGROUP_DIR"
   local nicename="$CURGROUP_NAME/$name"
