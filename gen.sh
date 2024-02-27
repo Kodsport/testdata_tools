@@ -99,9 +99,9 @@ add_program cat "bash -c cat<\$0"
 compile_cpp () {
   echo Compiling $1...
   if [[ $2 == *"opt"* || "$(uname -s)" != Linux* ]]; then
-    g++ -O2 -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(_base $1) $1
+    g++ -O2 -Wall -std=gnu++17 -DGENERATING_TEST_DATA -o $(_base $1) $1
   else
-    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++14 -DGENERATING_TEST_DATA -o $(_base $1) $1
+    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++17 -DGENERATING_TEST_DATA -o $(_base $1) $1
   fi
   add_program $(_base $1) "./$(_base $1)"
   add_cleanup $(_base $1)
