@@ -354,7 +354,11 @@ tc () {
       if [[ ${latestdir[$name]} == "$CURGROUP_DIR" ]]; then
         echo "Skipping duplicate case ${nicenames[$name]}"
       else
-        LN="ln -s ../../" # ln -sr isn't supported on Mac
+        if [[ $USE_SCORING = 0 ]]; then
+            LN="ln -s ../" # one lower level of nesting for non-scoring
+        else
+            LN="ln -s ../../" # ln -sr isn't supported on Mac
+        fi
         if [[ $USE_SYMLINKS = 0 ]]; then
           wait
           PARALLELISM_ACTIVE=1
