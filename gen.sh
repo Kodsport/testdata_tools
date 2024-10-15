@@ -1,3 +1,4 @@
+#!
 # This file provides support functions for generating testdata, primarily for
 # scoring problems with test groups. It has some niceties like automatically
 # passing deterministic random seeds to the generator, and generating test
@@ -262,17 +263,17 @@ grader_flags: min" > "$CURGROUP_DIR/testdata.yaml"
 # Arguments: parameters sent to input validator
 limits () {
   if [[ $USE_SCORING == 1 ]]; then
-    echo "input_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
+    echo "input_validator_flags: $*" >> "$CURGROUP_DIR/testdata.yaml"
   else
-    echo "input_validator_flags: $@" >> testdata.yaml
+    echo "input_validator_flags: $*" >> testdata.yaml
   fi
 }
 
 output_validator_flags () {
   if [[ $USE_SCORING == 1 ]]; then
-    echo "output_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
+    echo "output_validator_flags: $*" >> "$CURGROUP_DIR/testdata.yaml"
   else
-    echo "output_validator_flags: $@" >> testdata.yaml
+    echo "output_validator_flags: $*" >> testdata.yaml
   fi
 }
 
