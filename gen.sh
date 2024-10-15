@@ -1,4 +1,4 @@
-#!
+#!/usr/bin/env bash
 # This file provides support functions for generating testdata, primarily for
 # scoring problems with test groups. It has some niceties like automatically
 # passing deterministic random seeds to the generator, and generating test
