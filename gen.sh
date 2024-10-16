@@ -64,7 +64,7 @@ _get_ext () {
 
 _base () {
   ext=$(_get_ext "$1")
-  basename "$1" ."$ext"
+  basename "$1" ".$ext"
 }
 
 _error () {
@@ -371,12 +371,13 @@ tc () {
         local path
         path="$CURGROUP_DIR/$(_base "${cases[$name]}")"
         # shellcheck disable=2086
-        ${LN}${cases[$name]}.in "$path.in"
+        ${LN}"${cases[$name]}".in "$path.in"
         # shellcheck disable=2086
-        ${LN}${cases[$name]}.ans "$path.ans"
+        ${LN}"${cases[$name]}".ans "$path.ans"
         for ext in {hint,desc}; do
-            if [ -f "${cases[$name]}"."$ext" ]; then
-                "${LN}""${cases[$name]}"."$ext" "$path.$ext"
+            if [ -f "${cases[$name]}.$ext" ]; then
+                # shellcheck disable=2086
+                ${LN}"${cases[$name]}.$ext" "$path.$ext"
             fi
         done
         latestdir[$name]="$CURGROUP_DIR"
