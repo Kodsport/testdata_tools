@@ -370,8 +370,10 @@ tc () {
         fi
         local path
         path="$CURGROUP_DIR/$(_base "${cases[$name]}")"
-        "${LN}""${cases[$name]}".in "$path.in"
-        "${LN}""${cases[$name]}".ans "$path.ans"
+        # shellcheck disable=2086
+        ${LN}${cases[$name]}.in "$path.in"
+        # shellcheck disable=2086
+        ${LN}${cases[$name]}.ans "$path.ans"
         for ext in {hint,desc}; do
             if [ -f "${cases[$name]}"."$ext" ]; then
                 "${LN}""${cases[$name]}"."$ext" "$path.$ext"

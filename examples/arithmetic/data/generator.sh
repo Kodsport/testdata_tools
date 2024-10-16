@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-PPATH=$(realpath ..)
-. "$PPATH"/../../gen.sh
+# shellcheck source=/dev/null
+. ../../../gen.sh
 
 use_solution arithmetic.cpp
 
