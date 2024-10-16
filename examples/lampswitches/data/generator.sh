@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-. ../../../gen.sh
+PPATH=$(realpath ..)
+. "$PPATH"/../../gen.sh
 
 use_solution sl.cpp
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-. ../../../gen.sh
+PPATH=$(realpath ..)
+. "$PPATH"/../../gen.sh
 
 ulimit -s unlimited
 
