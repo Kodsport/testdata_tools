@@ -64,7 +64,7 @@ _get_ext () {
 
 _base () {
   ext=$(_get_ext "$1")
-  echo "$(basename "$1" ."$ext")"
+  basename "$1" ."$ext"
 }
 
 _error () {
@@ -396,7 +396,7 @@ tc () {
   # Add an index to the test case name, to enforce evaluation order.
   local path
   path="$CURGROUP_DIR/$(printf '%03d' $TC_INDEX)-$name"
-  let TC_INDEX++
+  (( TC_INDEX++ ))
   CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]="$CURGROUP_DIR"
@@ -416,9 +416,9 @@ tc () {
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
       wait
-      let PARALLELISM_ACTIVE=1
+      PARALLELISM_ACTIVE=1
     fi
-    let PARALLELISM_ACTIVE++
+    (( PARALLELISM_ACTIVE++ ))
     _par_tc "$nicename" "$name" "$path" "$program" "${@:3}" &
   fi
 }
@@ -466,7 +466,7 @@ _cleanup_programs () {
     rm -f "$x"
   done
   rm -rf __pycache__
-  rm -rf *.class
+  rm -rf ./*.class
 
   _check_missing_samples
 
