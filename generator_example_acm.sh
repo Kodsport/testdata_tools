@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+export USE_SCORING
+# shellcheck source=/dev/null
 USE_SCORING=0
 . ../../testdata_tools/gen.sh
 
