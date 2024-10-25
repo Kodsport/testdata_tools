@@ -26,5 +26,5 @@ tc two-4 echo two
 group group3 40
 limits mode=random
 for A in {1..20}; do
-	tc random-"$A" echo random
+	tc "random-$A" echo random
 done
