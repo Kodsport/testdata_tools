@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
 . ../../../gen.sh
 
 ulimit -s unlimited
