@@ -176,7 +176,7 @@ grader_flags: ignore_sample" > testdata.yaml
 # Arguments: testcase path
 solve () {
   local execmd=${programs[$SOLUTION]}
-  $execmd < "$1".in > "$1".ans
+  $execmd < "$1.in" > "$1.ans"
 }
 
 CURGROUP_NAME=.
