@@ -98,7 +98,7 @@ add_program cat "bash -c cat<\$0"
 # Compile a C++ program to run.
 # Arguments: file opts
 compile_cpp () {
-  echo Compiling "$1"...
+  echo "Compiling $1..."
   if [[ $2 == *"opt"* || "$(uname -s)" != Linux* ]]; then
     g++ -O2 -Wall -std=gnu++20 -DGENERATING_TEST_DATA -o "$(_base "$1")" "$1"
   else
