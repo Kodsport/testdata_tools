@@ -209,7 +209,7 @@ sample () {
     return 0
   fi
   echo "Solving case sample/$name..."
-  solve "sample/$name"
+  solve "$path"
   CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]=sample
@@ -430,14 +430,16 @@ tc_manual () {
 # Arguments: group name to include
 include_group () {
   _assert_scoring include_group
-  local any=0
-  for x in ${groups[$1]}; do
-    tc "$x"
-    any=1
+  for g in "$@"; do
+    local any=0
+    for x in ${groups[$g]}; do
+      tc "$x"
+      any=1
+    done
+    if [[ $any = 0 ]]; then
+      _error "included group \"$g\" does not exist"
+    fi
   done
-  if [[ $any = 0 ]]; then
-    _error "included group \"$1\" does not exist"
-  fi
 }
 
 # Initialization and cleanup code, automatically included.
