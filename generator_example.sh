@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck source=/dev/null
 . ../../testdata_tools/gen.sh
 
 # Example test data generator, with comments to explain what each line does.
