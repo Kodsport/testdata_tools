@@ -37,7 +37,6 @@
  Assumptions:
      Correctness:
          Secret groups are numbered data/secret/group1, data/secret/group2, ...
-         Grader aggregation is min
      Typographical (otherwise ugly output):
          Times are <= 9.99s
          At most 9 groups
@@ -284,8 +283,6 @@ class VerificationLogParser:
 
     def _start_testgroup(self, _):
         r"INFO : Running on test case group data/(sample|secret/group<number>)"
-        #print(_, "ASDUI")
-        #input()
         self.tc_times: List[float] = []
 
     def _ac_tc_result(self, matchgroup):
