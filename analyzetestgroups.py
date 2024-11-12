@@ -31,12 +31,13 @@
 
  Since running verifyproblem can be very time-consuming, its output can
  be provided as a file, as in:
- $ verifyproblem myproblem -l info > tmplog.txt
+ $ verifyproblem myproblem -l debug > tmplog.txt
  $ python3 analyzetestgroups.py --file tmplog.txt
 
  Assumptions:
      Correctness:
          Secret groups are numbered data/secret/group1, data/secret/group2, ...
+         Grader aggregation is min
      Typographical (otherwise ugly output):
          Times are <= 9.99s
          At most 9 groups
@@ -75,7 +76,7 @@ def parse_args() -> argparse.Namespace:
         "--file",
         dest="logfile",
         type=open,
-        help="read logfile instead of running verifyproblem -l info",
+        help="read logfile instead of running verifyproblem -l debug",
     )
     argsparser.add_argument(
         "-l",
@@ -226,7 +227,7 @@ class Submission:
 
 
 class VerificationLogParser:
-    """Parse output from verifyproblem <path> -l info.
+    """Parse output from verifyproblem <path> -l debug.
 
     VerificationLogParser.parse() works line by line through given inputstream,
     matches the current line to various regular expressions in the list
@@ -264,6 +265,8 @@ class VerificationLogParser:
 
     def _first_line(self, matchgroup):
         """Loading problem <problemname>"""
+        if hasattr(self.problem, "name"):
+            return
         self.problem.name = matchgroup["problemname"]
         if self.problem.name != self.problem.path.stem:
             sys.exit(
@@ -281,6 +284,8 @@ class VerificationLogParser:
 
     def _start_testgroup(self, _):
         r"INFO : Running on test case group data/(sample|secret/group<number>)"
+        #print(_, "ASDUI")
+        #input()
         self.tc_times: List[float] = []
 
     def _ac_tc_result(self, matchgroup):
@@ -322,23 +327,23 @@ class VerificationLogParser:
     patterns: Dict[Callable, Pattern] = {
         _first_line: re.compile(r"Loading problem (?P<problemname>\S+)"),
         _testgroup_grade: re.compile(
-            r"""INFO\ :\ Grade\ on\ test\ case\ group\ data/
-        (?P<type>sample|secret/group)
+            r"""Grade\ on\ testcase\ group\ data\.
+        (?P<type>sample|secret\.group)
         ((?P<number>\d+))?
         \s+ is \s+
         (?P<grade>\S+)""",
             re.VERBOSE,
         ),
         _start_submission: re.compile(
-            r"INFO : Check (?P<type>\S+) submission (?P<name>\S+)"
+            r"Check (?P<type>\S+) submission (?P<name>\S+)"
         ),
         _start_testgroup: re.compile(
-            r"INFO : Running on test case group data/(sample|secret/group(?P<number>\d+))"
+            r"Running on testcase group data\.(sample|secret\.group(?P<number>\d+))"
         ),
         _ac_tc_result: re.compile(
             r"""[T|t]est\ file\ result.*AC.*CPU:\s
         (?P<time>\d+.\d+)
-        .* test\ case\ (sample|secret/group\d)/
+        .* testcase\ (sample|secret/group\d)/
         (?P<case>[^\]]+)
         """,
             re.VERBOSE,
@@ -490,7 +495,7 @@ def main():
             sys.exit(1)
     if not args.logfile:
         verifyproblem = subprocess.Popen(
-            ["verifyproblem", args.problemdir, "-l", "info", "-p", "submissions"],
+            ["verifyproblem", args.problemdir, "-l", "debug", "-p", "submissions"],
             stdout=subprocess.PIPE,
             encoding="utf-8",
             universal_newlines=True,
