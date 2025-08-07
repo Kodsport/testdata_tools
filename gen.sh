@@ -426,6 +426,33 @@ tc_manual () {
   tc $(_base "$1") cat "$1"
 }
 
+# Arguments: ../manual-tests/test_group/
+tg_manual() {
+  local dir="$1"
+
+  if [[ ! -d "$dir" ]]; then
+    _error "Directory \"$dir\" does not exist."
+    return 0
+  fi
+
+  local invalid
+  invalid=$(find "$dir" -mindepth 1 -maxdepth 1 -type f ! -name "*.in" -print -quit)
+  if [[ -n "$invalid" ]]; then
+    _error "File \"$invalid\" in \"$dir\" is not a \".in\" file."
+    return 0
+  fi
+
+  local infiles=("$dir"/*.in)
+  if [[ ! -e "${infiles[0]}" ]]; then
+    _error "No .in files found in \"$dir\"."
+    return 0
+  fi
+
+  for infile in "${infiles[@]}"; do
+    tc_manual "$infile"
+  done
+}
+
 # Include all testcases in another group
 # Arguments: group name to include
 include_group () {
