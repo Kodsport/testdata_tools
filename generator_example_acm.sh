@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+export USE_SCORING
 USE_SCORING=0
+# shellcheck source=/dev/null
 . ../../testdata_tools/gen.sh
 
 # Example test data generator for non-scoring problems.
