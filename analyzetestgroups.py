@@ -416,6 +416,8 @@ class Problem:
 
             if sub.has_expected_grades():
                 summary = []
+                assert len(sub._expected_grades) == 0 or len(self.groups) == len(sub._expected_grades), \
+                    f"Mismatch between number of groups and number of @EXPECTED_GRADES for submission {sub}"
                 for i in self.groups:
                     if sub.expected_grade(i) == sub.verdict[i].grade:
                         summary.append("\033[32my\033[0m")
