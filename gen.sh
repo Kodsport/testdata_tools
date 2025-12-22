@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # This file provides support functions for generating testdata, primarily for
 # scoring problems with test groups. It has some niceties like automatically
 # passing deterministic random seeds to the generator, and generating test
@@ -63,7 +64,7 @@ _get_ext () {
 
 _base () {
   ext=$(_get_ext "$1")
-  echo $(basename "$1" .$ext)
+  basename "$1" ".$ext"
 }
 
 _error () {
@@ -97,64 +98,64 @@ add_program cat "bash -c cat<\$0"
 # Compile a C++ program to run.
 # Arguments: file opts
 compile_cpp () {
-  echo Compiling $1...
+  echo "Compiling $1..."
   if [[ $2 == *"opt"* || "$(uname -s)" != Linux* ]]; then
-    g++ -O2 -Wall -std=gnu++20 -DGENERATING_TEST_DATA -o $(_base $1) $1
+    g++ -O2 -Wall -std=gnu++20 -DGENERATING_TEST_DATA -o "$(_base "$1")" "$1"
   else
-    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++20 -DGENERATING_TEST_DATA -o $(_base $1) $1
+    g++ -O2 -fsanitize=undefined -fsanitize=address -Wall -std=gnu++20 -DGENERATING_TEST_DATA -o "$(_base "$1")" "$1"
   fi
-  add_program $(_base $1) "./$(_base $1)"
-  add_cleanup $(_base $1)
+  add_program "$(_base "$1")" "./$(_base "$1")"
+  add_cleanup "$(_base "$1")"
 }
 
 # Compile a Java program to run.
 # Arguments: file
 compile_java () {
-  javac $1
-  if ! [ $(pwd) -ef $(dirname $1) ] # unless $(dirname $1) is the same dir as $(pwd)
+  javac "$1"
+  if ! [ "$(pwd)" -ef "$(dirname "$1")" ] # unless $(dirname $1) is the same dir as $(pwd)
   then
-    cp $(dirname $1)/*.class .
+    cp "$(dirname "$1")"/*.class .
   fi
-  add_program $(_base $1) "java $(_base $1)"
-  add_cleanup $(_base $1)
+  add_program "$(_base "$1")" "java $(_base "$1")"
+  add_cleanup "$(_base "$1")"
 }
 
 # Compile a Python program to run.
 # Arguments: file opts
 compile_py () {
   if [[ $2 == *"cpython3"* ]]; then
-    add_program $(_base $1) "python3 $1"
+    add_program "$(_base "$1")" "python3 $1"
   elif [[ $2 == *"cpython2"* ]]; then
-    add_program $(_base $1) "python2 $1"
+    add_program "$(_base "$1")" "python2 $1"
   elif [[ $2 == *"pypy2"* ]]; then
-    add_program $(_base $1) "pypy $1"
+    add_program "$(_base "$1")" "pypy $1"
   else
-    add_program $(_base $1) "pypy3 $1"
+    add_program "$(_base "$1")" "pypy3 $1"
   fi
 }
 
 # Compile a bash program to run.
 # Arguments: file
 compile_sh () {
-  add_program $(_base $1) "bash $1"
+  add_program "$(_base "$1")" "bash $1"
 }
 
 # Compile a program
 # Arguments: file opts
 compile () {
-  ext=$(_get_ext $1)
-  if [ $ext == "java" ]
+  ext=$(_get_ext "$1")
+  if [ "$ext" == "java" ]
   then 
-    compile_java $1
-  elif [ $ext == "cpp" -o $ext == "cc" ]
+    compile_java "$1"
+  elif [ "$ext" == "cpp" ] || [ "$ext" == "cc" ]
   then
-    compile_cpp $1 $2
-  elif [ $ext == "py" ]
+    compile_cpp "$1" "$2"
+  elif [ "$ext" == "py" ]
   then
-    compile_py $1 $2
-  elif [ $ext == "sh" ]
+    compile_py "$1" "$2"
+  elif [ "$ext" == "sh" ]
   then
-    compile_sh $1 $2
+    compile_sh "$1" "$2"
   else
     echo "Unsupported program: $1"
     exit 1
@@ -175,7 +176,7 @@ grader_flags: ignore_sample" > testdata.yaml
 # Arguments: testcase path
 solve () {
   local execmd=${programs[$SOLUTION]}
-  $execmd < $1.in > $1.ans
+  $execmd < "$1.in" > "$1.ans"
 }
 
 CURGROUP_NAME=.
@@ -186,8 +187,8 @@ CURTEST=
 # Arguments: solution name
 use_solution () {
   path=$SOLUTION_BASE/$1
-  SOLUTION=$(_base $path)
-  compile $path $2
+  SOLUTION="$(_base "$path")"
+  compile "$path" "$2"
 }
 
 
@@ -262,23 +263,24 @@ grader_flags: min" > "$CURGROUP_DIR/testdata.yaml"
 # Arguments: parameters sent to input validator
 limits () {
   if [[ $USE_SCORING == 1 ]]; then
-    echo "input_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
+    echo "input_validator_flags: $*" >> "$CURGROUP_DIR/testdata.yaml"
   else
-    echo "input_validator_flags: $@" >> testdata.yaml
+    echo "input_validator_flags: $*" >> testdata.yaml
   fi
 }
 
 output_validator_flags () {
   if [[ $USE_SCORING == 1 ]]; then
-    echo "output_validator_flags: $@" >> "$CURGROUP_DIR/testdata.yaml"
+    echo "output_validator_flags: $*" >> "$CURGROUP_DIR/testdata.yaml"
   else
-    echo "output_validator_flags: $@" >> testdata.yaml
+    echo "output_validator_flags: $*" >> testdata.yaml
   fi
 }
 
 _check_missing_samples () {
   for INF in sample/*.in; do
-    local name=$(basename "$INF" .in)
+    local name
+    name=$(basename "$INF" .in)
     if [[ "$name" != '*' && ${cases[$name]} != sample* ]]; then
       _error "missing sample or sample_manual directive for sample/$name.in"
     fi
@@ -286,7 +288,8 @@ _check_missing_samples () {
 
   local any=0
   for INF in sample/*.in; do
-    local name=$(basename "$INF" .in)
+    local name
+    name=$(basename "$INF" .in)
     if [[ "$name" != '*' && ${cases[$name]} = sample* && ${latestdir[$name]} = "sample" && $REQUIRE_SAMPLE_REUSE = 1 ]]; then
       _error "sample/$name must be included in some secret test group; add the line \"tc $name\""
       any=1
@@ -336,6 +339,7 @@ _handle_err() {
 
 _par_tc () {
   set -E
+  # shellcheck disable=SC2064
   trap "_handle_err $1" ERR
   _do_tc "$@"
 }
@@ -364,12 +368,16 @@ tc () {
           PARALLELISM_ACTIVE=1
           LN="cp "
         fi
-        local path="$CURGROUP_DIR/$(_base ${cases[$name]})"
-        ${LN}${cases[$name]}.in "$path.in"
-        ${LN}${cases[$name]}.ans "$path.ans"
+        local path
+        path="$CURGROUP_DIR/$(_base "${cases[$name]}")"
+        # shellcheck disable=2086
+        ${LN}"${cases[$name]}".in "$path.in"
+        # shellcheck disable=2086
+        ${LN}"${cases[$name]}".ans "$path.ans"
         for ext in {hint,desc}; do
-            if [ -f ${cases[$name]}.$ext ]; then
-                ${LN}${cases[$name]}.$ext "$path.$ext"
+            if [ -f "${cases[$name]}.$ext" ]; then
+                # shellcheck disable=2086
+                ${LN}"${cases[$name]}.$ext" "$path.$ext"
             fi
         done
         latestdir[$name]="$CURGROUP_DIR"
@@ -389,8 +397,9 @@ tc () {
   fi
 
   # Add an index to the test case name, to enforce evaluation order.
-  local path="$CURGROUP_DIR/$(printf '%03d' $TC_INDEX)-$name"
-  let TC_INDEX++
+  local path
+  path="$CURGROUP_DIR/$(printf '%03d' $TC_INDEX)-$name"
+  (( TC_INDEX++ ))
   CURTEST="$path"
   cases[$name]="$path"
   latestdir[$name]="$CURGROUP_DIR"
@@ -410,9 +419,9 @@ tc () {
     if [[ $PARALLELISM_ACTIVE = 5 ]]; then
       # wait after every 4 cases
       wait
-      let PARALLELISM_ACTIVE=1
+      PARALLELISM_ACTIVE=1
     fi
-    let PARALLELISM_ACTIVE++
+    (( PARALLELISM_ACTIVE++ ))
     _par_tc "$nicename" "$name" "$path" "$program" "${@:3}" &
   fi
 }
@@ -423,7 +432,7 @@ tc_manual () {
   if [[ $# == 1 ]]; then
       name=$(_base "$1")
   fi
-  tc $(_base "$1") cat "$1"
+  tc "$(_base "$1")" cat "$1"
 }
 
 # Arguments: ../manual-tests/test_group/
@@ -489,7 +498,7 @@ _cleanup_programs () {
     rm -f "$x"
   done
   rm -rf __pycache__
-  rm -rf *.class
+  rm -rf ./*.class
 
   _check_missing_samples
 

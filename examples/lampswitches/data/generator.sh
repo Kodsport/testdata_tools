@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# shellcheck source-path=SCRIPTDIR
 . ../../../gen.sh
 
 use_solution sl.cpp
@@ -74,9 +74,9 @@ wait
 if which dot >/dev/null; then
 	echo Creating visualizations...
 	for F in sample/*.in secret/group1/*.in; do
-		N=$(head -n 1 $F)
+		N=$(head -n 1 "$F")
 		if [[ $N -lt 25 ]]; then
-			./visualize.py <$F | dot -T png -o ${F%.in}.png
+			./visualize.py <"$F" | dot -T png -o "${F%.in}".png
 		fi
 	done
 fi
