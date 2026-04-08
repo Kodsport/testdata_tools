@@ -55,6 +55,7 @@ declare -A cases
 declare -A latestdir
 declare -A nicenames
 declare -A groups
+declare -A sample_symlink_name
 declare -a cleanup
 
 _get_ext () {
@@ -212,6 +213,8 @@ sample () {
   solve "$path"
   CURTEST="$path"
   cases[$name]="$path"
+  sample_symlink_name[$name]="$(printf '%03d' $TC_INDEX)-$name"
+  let TC_INDEX++
   latestdir[$name]=sample
   nicenames[$name]="sample/$name"
   groups[sample]="${groups[sample]} $name"
@@ -235,6 +238,8 @@ sample_manual () {
   echo "Using manual solution for $path"
   CURTEST="$path"
   cases[$name]="$path"
+  sample_symlink_name[$name]="$(printf '%03d' $TC_INDEX)-$name"
+  let TC_INDEX++
   latestdir[$name]=sample
   nicenames[$name]="sample/$name"
   groups[sample]="${groups[sample]} $name"
@@ -364,7 +369,9 @@ tc () {
           PARALLELISM_ACTIVE=1
           LN="cp "
         fi
-        local path="$CURGROUP_DIR/$(_base ${cases[$name]})"
+        # To ensure correct order, the symlink names of samples are e.g. 001-sample01.in instead of just sample01.in
+        local basepath="${sample_symlink_name[$name]:-$(_base ${cases[$name]})}"
+        local path="$CURGROUP_DIR/$basepath"
         ${LN}${cases[$name]}.in "$path.in"
         ${LN}${cases[$name]}.ans "$path.ans"
         for ext in {hint,desc}; do
