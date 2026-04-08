@@ -48,6 +48,7 @@ NOCOL='\033[0m'
 TOTAL_SCORE=0
 HAS_ERROR=0
 TC_INDEX=1
+PREV_GROUP_NAME=
 
 
 declare -A programs
@@ -250,6 +251,10 @@ group () {
   _assert_scoring group
   CURGROUP_NAME="$1"
   CURGROUP_DIR="secret/$1"
+  if [[ -n "$PREV_GROUP_NAME" && $(printf '%s\n%s\n' "$1" "$PREV_GROUP_NAME" | LC_ALL=C sort | head -1) != "$PREV_GROUP_NAME" ]]; then
+    _error "group name \"$1\" does not come after \"$PREV_GROUP_NAME\" in lexicographic order and will appear out of order in Kattis. Either prefix with group index or rename."
+  fi
+  PREV_GROUP_NAME="$1"
   echo 
   echo -e "Group $CURGROUP_NAME"
   mkdir "$CURGROUP_DIR"
