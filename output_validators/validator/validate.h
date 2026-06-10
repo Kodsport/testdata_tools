@@ -18,22 +18,22 @@
  * - accept_with_score(double score):
  *        exit with Accepted and give a score (for scoring problems)
  *
- * - judge_message(std::string msg, ...):
+ * - judge_message(const char* msg, ...):
  *        printf-style function for emitting a judge message (a
  *        message that gets displayed to a privileged user with access
  *        to secret data etc).
  *
- * - wrong_answer(std::string msg, ...):
+ * - wrong_answer(const char* msg, ...):
  *        printf-style function for exitting and giving Wrong Answer,
  *        and emitting a judge message (which would typically explain
  *        the cause of the Wrong Answer)
  *
- * - judge_error(std::string msg, ...):
+ * - judge_error(const char* msg, ...):
  *        printf-style function for exitting and giving Judge Error,
  *        and emitting a judge message (which would typically explain
  *        the cause of the Judge Error)
  *
- * - author_message(std::string msg, ...):
+ * - author_message(const char* msg, ...):
  *        printf-style function for emitting an author message (a
  *        message that gets displayed to the author of the
  *        submission).  (Use with caution, and be careful not to let
