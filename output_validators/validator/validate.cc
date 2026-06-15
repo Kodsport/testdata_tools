@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     auto check = [&](istream& sol, feedback_function feedback) {
         string ans;
         if (!(sol >> ans)) feedback("Expected more output");
-        for (char& c : ans) c = tolower(c);
+        for (char& c : ans) c = (char)tolower(c);
         if (ans != "no" && ans != "yes") {
             feedback("Answer is not {yes|no}");
         }

@@ -50,6 +50,7 @@
 #include <fstream>
 #include <sstream>
 
+__attribute__((format(printf, 1, 2)))
 typedef void (*feedback_function)(const char*, ...);
 
 const int EXITCODE_AC = 42;
@@ -79,24 +80,29 @@ void vreport_feedback(const char* category,
     fclose(f);
 }
 
+__attribute__((format(printf, 2, 3)))
 void report_feedback(const char* category, const char* msg, ...) {
     va_list pvar;
     va_start(pvar, msg);
     vreport_feedback(category, msg, pvar);
 }
 
+__attribute__((format(printf, 1, 2)))
 void author_message(const char* msg, ...) {
     va_list pvar;
     va_start(pvar, msg);
     vreport_feedback(FILENAME_AUTHOR_MESSAGE, msg, pvar);
 }
 
+__attribute__((format(printf, 1, 2)))
 void judge_message(const char* msg, ...) {
     va_list pvar;
     va_start(pvar, msg);
     vreport_feedback(FILENAME_JUDGE_MESSAGE, msg, pvar);
 }
 
+[[noreturn]]
+__attribute__((format(printf, 1, 2)))
 void wrong_answer(const char* msg, ...) {
     va_list pvar;
     va_start(pvar, msg);
@@ -104,17 +110,22 @@ void wrong_answer(const char* msg, ...) {
     exit(EXITCODE_WA);
 }
 
+[[noreturn]]
+__attribute__((format(printf, 1, 2)))
 void judge_error(const char* msg, ...) {
     va_list pvar;
     va_start(pvar, msg);
     vreport_feedback(FILENAME_JUDGE_ERROR, msg, pvar);
     assert(0);
+    exit(1);
 }
 
+[[noreturn]]
 void accept() {
     exit(EXITCODE_AC);
 }
 
+[[noreturn]]
 void accept_with_score(double scorevalue) {
     report_feedback(FILENAME_SCORE, "%.9le", scorevalue);
     exit(EXITCODE_AC);
