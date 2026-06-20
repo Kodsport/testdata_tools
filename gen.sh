@@ -461,7 +461,14 @@ tg_manual() {
   fi
 
   for infile in "${infiles[@]}"; do
-    tc_manual "$infile"
+    local name
+    name=$(_base "$infile")
+    if [[ ${cases[$name]} != "" ]]; then
+      # Case already exists from an earlier group, reuse it
+      tc "$name"
+    else
+      tc_manual "$infile"
+    fi
   done
 }
 
