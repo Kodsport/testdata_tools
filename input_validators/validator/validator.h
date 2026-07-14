@@ -274,7 +274,7 @@ IntType IO::Int(long long lo, long long hi) {
 		if (ind == (int)s.size()) throw false;
 		char ch = s[ind++];
 		if (ch < '0' || ch > '9') throw false;
-		if (ch == '0' && ind != (int)s.size()) throw false;
+		if (ch == '0' && (ind != (int)s.size() || mul == -1)) throw false;
 		long long ret = ch - '0';
 		while (ind < (int)s.size()) {
 			if (ret > LLONG_MAX / 10 - 20 || ret < LLONG_MIN / 10 + 20)
