@@ -10,6 +10,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <charconv>
 #include <map>
 #include <set>
 using namespace std;
@@ -317,26 +318,41 @@ vector<double> IO::SpacedFloats(long long count, double lo, double hi, int decim
 
 double IO::Float(double lo, double hi, int decimals, bool strict) {
 	string s = IO::Word();
-	istringstream iss(s);
-	double res;
-	string dummy;
-	iss >> res;
-	if (!iss || iss >> dummy) die_line("Unable to parse " + s + " as a float");
-	if (res < lo || res > hi) die_line("Floating-point number " + s + " is out of range [" + to_string(lo) + ", " + to_string(hi) + "]");
-	if (res != res) die_line("Floating-point number " + s + " is NaN");
-    size_t dot = s.find('.');
-    if (dot != string::npos) {
-        int dec = (int)(s.size() - dot - 1);
-        if (dec > decimals) {
-            die_line("Number " + s + " has " + to_string(dec) + " decimals; " + to_string(decimals) + " is max");
-        }
-    }
+
+	int dec = 0;  // number of fractional digits
 	if (strict) {
-		if (s.find('.') != string::npos && s.back() == '0' && s.substr(s.size() - 2) != ".0")
+		// Grammar: -?(0|[1-9][0-9]*)(\.[0-9]*[1-9])?, with -0 additionally forbidden.
+		size_t i = (s[0] == '-'), intStart = i;
+		while (i < s.size() && '0' <= s[i] && s[i] <= '9') i++;
+		bool ok = i > intStart && (s[intStart] != '0' || i - intStart == 1);  // digits, no leading zero
+		if (ok && i < s.size() && s[i] == '.') {
+			size_t fracStart = ++i;
+			while (i < s.size() && '0' <= s[i] && s[i] <= '9') i++;
+			dec = (int)(i - fracStart);
+			ok = dec > 0;  // at least one digit after '.'
+		}
+		if (!ok || i != s.size())
+			die_line("Number " + s + " does not match strict float format -?(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?");
+		if (s[0] == '-' && s.find_first_of("123456789") == string::npos)
+			die_line("Number " + s + " is negative zero");
+		if (dec > 0 && s.back() == '0')
 			die_line("Number " + s + " has unnecessary trailing zeroes");
-		if (s[0] == '0' && s.size() > 1 && s[1] == '0')
-			die_line("Number " + s + " has unnecessary leading zeroes");
+	} else {
+		size_t dot = s.find('.');
+		if (dot != string::npos) {
+			size_t i = dot + 1;
+			while (i < s.size() && '0' <= s[i] && s[i] <= '9') i++;
+			dec = (int)(i - dot - 1);
+		}
 	}
+	if (dec > decimals)
+		die_line("Number " + s + " has " + to_string(dec) + " decimals; " + to_string(decimals) + " is max");
+
+	double res;
+	auto [ptr, ec] = from_chars(s.data(), s.data() + s.size(), res);
+	if (ec != errc() || ptr != s.data() + s.size()) die_line("Unable to parse " + s + " as a float");
+	if (res != res) die_line("Floating-point number " + s + " is NaN");
+	if (res < lo || res > hi) die_line("Floating-point number " + s + " is out of range [" + to_string(lo) + ", " + to_string(hi) + "]");
 	return res;
 }
 
