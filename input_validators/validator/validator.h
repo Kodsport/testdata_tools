@@ -258,12 +258,12 @@ string IO::Word() {
 		_use_peek(ch);
 		ret += ch;
 	}
+	if (ret.empty()) die_line("Expected non-empty token, saw " + _describe(_peek1()));
 	return ret;
 }
 
 IntType IO::Int(long long lo, long long hi) {
 	string s = IO::Word();
-	if (s.empty()) die_line("Expected number, saw " + _describe(_peek1()));
 	try {
 		long long mul = 1;
 		int ind = 0;
@@ -317,7 +317,6 @@ vector<double> IO::SpacedFloats(long long count, double lo, double hi, int decim
 
 double IO::Float(double lo, double hi, int decimals, bool strict) {
 	string s = IO::Word();
-	if (s.empty()) die_line("Expected floating point number, saw " + _describe(_peek1()));
 	istringstream iss(s);
 	double res;
 	string dummy;
