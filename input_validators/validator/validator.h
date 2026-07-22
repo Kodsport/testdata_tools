@@ -54,10 +54,10 @@ void AssertUnique(const Vec& v);
 
 namespace IO {
 	IntType Int(long long lo, long long hi);
-	double Float(double lo, double hi, int decimals, bool strict = true);
+	double Float(double lo, double hi, int maxDecimals, bool strict = true);
 	template<class T>
 	vector<T> SpacedInts(long long count, T lo, T hi);
-	vector<double> SpacedFloats(long long count, double lo, double hi, int decimals);
+	vector<double> SpacedFloats(long long count, double lo, double hi, int maxDecimals, bool strict = true);
 	void Char(char expected);
 	char Char();
 	string Word();
@@ -305,23 +305,23 @@ vector<T> IO::SpacedInts(long long count, T lo, T hi) {
 	return res;
 }
 
-vector<double> IO::SpacedFloats(long long count, double lo, double hi, int decimals) {
+vector<double> IO::SpacedFloats(long long count, double lo, double hi, int maxDecimals, bool strict) {
 	vector<double> res;
 	res.reserve(count);
 	for (int i = 0; i < count; i++) {
 		if (i != 0) IO::Space();
-		res.emplace_back(IO::Float(lo, hi, decimals));
+		res.emplace_back(IO::Float(lo, hi, maxDecimals, strict));
 	}
 	IO::Endl();
 	return res;
 }
 
-double IO::Float(double lo, double hi, int decimals, bool strict) {
+double IO::Float(double lo, double hi, int maxDecimals, bool strict) {
 	string s = IO::Word();
 
 	int dec = 0;  // number of fractional digits
 	if (strict) {
-		// Grammar: -?(0|[1-9][0-9]*)(\.[0-9]*[1-9])?, with -0 additionally forbidden.
+		// Grammar: -?(0|[1-9][0-9]*)(\.(0|[0-9]*[1-9]))?, with -0 additionally forbidden.
 		size_t i = (s[0] == '-'), intStart = i;
 		while (i < s.size() && '0' <= s[i] && s[i] <= '9') i++;
 		bool ok = i > intStart && (s[intStart] != '0' || i - intStart == 1);  // digits, no leading zero
@@ -332,10 +332,10 @@ double IO::Float(double lo, double hi, int decimals, bool strict) {
 			ok = dec > 0;  // at least one digit after '.'
 		}
 		if (!ok || i != s.size())
-			die_line("Number " + s + " does not match strict float format -?(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?");
+			die_line("Number " + s + " does not match strict float format -?(0|[1-9][0-9]*)(\\.(0|[0-9]*[1-9]))?");
 		if (s[0] == '-' && s.find_first_of("123456789") == string::npos)
 			die_line("Number " + s + " is negative zero");
-		if (dec > 0 && s.back() == '0')
+		if (dec > 1 && s.back() == '0')
 			die_line("Number " + s + " has unnecessary trailing zeroes");
 	} else {
 		size_t dot = s.find('.');
@@ -345,8 +345,8 @@ double IO::Float(double lo, double hi, int decimals, bool strict) {
 			dec = (int)(i - dot - 1);
 		}
 	}
-	if (dec > decimals)
-		die_line("Number " + s + " has " + to_string(dec) + " decimals; " + to_string(decimals) + " is max");
+	if (dec > maxDecimals)
+		die_line("Number " + s + " has " + to_string(dec) + " decimals; " + to_string(maxDecimals) + " is max");
 
 	double res;
 	auto [ptr, ec] = from_chars(s.data(), s.data() + s.size(), res);
