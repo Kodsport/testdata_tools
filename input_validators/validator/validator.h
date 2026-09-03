@@ -392,9 +392,7 @@ void AssertUnique(const Vec& v_) {
 	int size = (int)(end - beg);
 	for (int i = 0; i < size - 1; i++) {
 		if (v[i] == v[i+1]) {
-			ostringstream oss;
-			oss << "Vector contains duplicate value " << v[i];
-			die_line(oss.str());
+			die_line("Vector contains duplicate value");
 		}
 	}
 }
