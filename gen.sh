@@ -57,6 +57,7 @@ declare -A latestdir
 declare -A nicenames
 declare -A groups
 declare -A sample_symlink_name
+declare -A manual_source
 declare -a cleanup
 
 _get_ext () {
@@ -431,11 +432,15 @@ tc () {
 
 # Arguments: ../manual-tests/testcasename.in
 tc_manual () {
-  local name="$2"
-  if [[ $# == 1 ]]; then
-      name=$(_base "$1")
+  local name=$(_base "$1")
+  local src=$(realpath "$1")
+  if [[ ${cases[$name]} != "" && ${manual_source[$name]} == "$src" ]]; then
+    # Treat tc_manual with the same path the same as reusing via "tc name"
+    tc "$name"
+  else
+    manual_source[$name]="$src"
+    tc "$name" cat "$1"
   fi
-  tc $(_base "$1") cat "$1"
 }
 
 # Arguments: ../manual-tests/test_group/
