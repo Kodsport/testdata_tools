@@ -431,14 +431,11 @@ tc () {
 }
 
 # Arguments: ../manual-tests/testcasename.in
-# Adding the same file again reuses the existing test case (like "tc name").
-# A different file with the same name is still reported as a duplicate by tc.
 tc_manual () {
-  local name
-  name=$(_base "$1")
-  local src
-  src=$(realpath "$1")
+  local name=$(_base "$1")
+  local src=$(realpath "$1")
   if [[ ${cases[$name]} != "" && ${manual_source[$name]} == "$src" ]]; then
+    # Treat tc_manual with the same path the same as reusing via "tc name"
     tc "$name"
   else
     manual_source[$name]="$src"
