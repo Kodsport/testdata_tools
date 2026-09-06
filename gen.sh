@@ -57,6 +57,7 @@ declare -A latestdir
 declare -A nicenames
 declare -A groups
 declare -A sample_symlink_name
+declare -A manual_source
 declare -a cleanup
 
 _get_ext () {
@@ -430,12 +431,19 @@ tc () {
 }
 
 # Arguments: ../manual-tests/testcasename.in
+# Adding the same file again reuses the existing test case (like "tc name").
+# A different file with the same name is still reported as a duplicate by tc.
 tc_manual () {
-  local name="$2"
-  if [[ $# == 1 ]]; then
-      name=$(_base "$1")
+  local name
+  name=$(_base "$1")
+  local src
+  src=$(realpath "$1")
+  if [[ ${cases[$name]} != "" && ${manual_source[$name]} == "$src" ]]; then
+    tc "$name"
+  else
+    manual_source[$name]="$src"
+    tc "$name" cat "$1"
   fi
-  tc $(_base "$1") cat "$1"
 }
 
 # Arguments: ../manual-tests/test_group/
