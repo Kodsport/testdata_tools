@@ -523,7 +523,7 @@ _cleanup_programs () {
 
   if [[ $HAS_ERROR = 1 ]]; then
     echo
-    echo "There were errors, see above."
+    echo -e "${RED}There were errors, see above.${NOCOL}"
     exit 1
   fi
 }
