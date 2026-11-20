@@ -56,6 +56,7 @@ declare -A cases
 declare -A latestdir
 declare -A nicenames
 declare -A groups
+declare -A direct_includes
 declare -A sample_symlink_name
 declare -A manual_source
 declare -a cleanup
@@ -260,6 +261,7 @@ group () {
   echo -e "Group $CURGROUP_NAME"
   mkdir "$CURGROUP_DIR"
   groups[$1]=""
+  direct_includes=()
 
   score=$2
   echo "on_reject: break
@@ -480,13 +482,23 @@ tg_manual() {
 # Arguments: group name to include
 include_group () {
   _assert_scoring include_group
+  local g
   for g in "$@"; do
-    local any=0
+    if [[ "$g" == "$CURGROUP_NAME" ]]; then
+      _error "group \"$g\" cannot include itself"
+      continue
+    fi
+    if [[ -n "${direct_includes[$g]}" ]]; then
+      _error "group \"$g\" is included twice in group \"$CURGROUP_NAME\""
+      continue
+    fi
+    direct_includes[$g]=1
+    local group_exists=0
     for x in ${groups[$g]}; do
       tc "$x"
-      any=1
+      group_exists=1
     done
-    if [[ $any = 0 ]]; then
+    if [[ $group_exists = 0 ]]; then
       _error "included group \"$g\" does not exist"
     fi
   done
